@@ -1,9 +1,9 @@
 from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
-from fastapi import APIRouter, status
+from fastapi import APIRouter, HTTPException, status
 
-from app.schemas.usuario import UsuarioCreate, UsuarioRead
+from app.schemas.usuario import UsuarioCreate, UsuarioRead, UsuarioUpdate
 
 router = APIRouter(prefix="/usuarios", tags=["usuarios"])
 
@@ -69,3 +69,47 @@ def get_usuario(usuario_id: UUID) -> UsuarioRead:
         tipo_usuario="funcionario",
     )
     return fallback
+
+
+@router.put("/{usuario_id}", response_model=UsuarioRead)
+def update_usuario(usuario_id: UUID, payload: UsuarioUpdate) -> UsuarioRead:
+    """Atualiza parcialmente um usuário em memória.
+
+    Args:
+        usuario_id: Identificador UUID do usuário.
+        payload: Dados parciais para atualização do usuário.
+
+    Returns:
+        UsuarioRead: Usuário atualizado.
+
+    Raises:
+        HTTPException: Quando o usuário não é encontrado.
+    """
+
+    for indice, usuario in enumerate(_USUARIOS):
+        if usuario.id == usuario_id:
+            atualizado = usuario.model_copy(update=payload.model_dump(exclude_unset=True))
+            _USUARIOS[indice] = atualizado
+            return atualizado
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuário não encontrado")
+
+
+@router.delete("/{usuario_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_usuario(usuario_id: UUID) -> None:
+    """Remove um usuário em memória.
+
+    Args:
+        usuario_id: Identificador UUID do usuário.
+
+    Returns:
+        None: Resposta sem conteúdo quando a remoção é concluída.
+
+    Raises:
+        HTTPException: Quando o usuário não é encontrado.
+    """
+
+    for indice, usuario in enumerate(_USUARIOS):
+        if usuario.id == usuario_id:
+            del _USUARIOS[indice]
+            return None
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuário não encontrado")

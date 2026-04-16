@@ -41,6 +41,27 @@ class UsuarioCreate(UsuarioBase):
     senha: str = Field(min_length=6, max_length=255)
 
 
+class UsuarioUpdate(BaseModel):
+    """Define payload de entrada para atualização parcial de usuário.
+
+    Args:
+        nome: Nome opcional do usuário.
+        sobrenome: Sobrenome opcional do usuário.
+        email: E-mail opcional do usuário.
+        telefone: Telefone opcional do usuário.
+        tipo_usuario: Perfil opcional do usuário.
+
+    Returns:
+        None: Classe de schema para validação de atualização.
+    """
+
+    nome: str | None = Field(default=None, min_length=1)
+    sobrenome: str | None = Field(default=None, min_length=1)
+    email: EmailStr | None = None
+    telefone: str | None = None
+    tipo_usuario: TipoUsuario | None = None
+
+
 class UsuarioRead(UsuarioBase):
     """Define payload de saída para leitura de usuário.
 
