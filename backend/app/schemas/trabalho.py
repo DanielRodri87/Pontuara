@@ -38,6 +38,27 @@ class TrabalhoCreate(TrabalhoBase):
     pass
 
 
+class TrabalhoUpdate(BaseModel):
+    """Define payload de entrada para atualização parcial de trabalho.
+
+    Args:
+        empregador_id: Identificador UUID opcional do empregador.
+        titulo: Título opcional do trabalho.
+        descricao: Descrição opcional do trabalho.
+        categoria: Categoria opcional do trabalho.
+        projeto: Nome opcional do projeto.
+
+    Returns:
+        None: Classe de schema para validação de atualização.
+    """
+
+    empregador_id: UUID | None = None
+    titulo: str | None = Field(default=None, min_length=1)
+    descricao: str | None = None
+    categoria: str | None = None
+    projeto: str | None = None
+
+
 class TrabalhoRead(TrabalhoBase):
     """Define payload de saída para leitura de trabalho.
 

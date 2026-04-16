@@ -34,6 +34,23 @@ class ExpedienteCreate(ExpedienteBase):
     pass
 
 
+class ExpedienteUpdate(BaseModel):
+    """Define payload de entrada para atualização parcial de expediente.
+
+    Args:
+        funcionario_id: Identificador UUID opcional do funcionário.
+        data_hora_inicio: Data e hora opcional de início do expediente.
+        data_hora_fim: Data e hora opcional de fim do expediente.
+
+    Returns:
+        None: Classe de schema para validação de atualização.
+    """
+
+    funcionario_id: UUID | None = None
+    data_hora_inicio: datetime | None = None
+    data_hora_fim: datetime | None = None
+
+
 class ExpedienteRead(ExpedienteBase):
     """Define payload de saída para leitura de expediente.
 
