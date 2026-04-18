@@ -1,18 +1,17 @@
-from datetime import datetime, timezone
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, status
 
+from app.core.config import settings
 from app.schemas.expediente import ExpedienteCreate, ExpedienteRead, ExpedienteUpdate
+from app.services.supabase import supabase_service
 
 router = APIRouter(prefix="/expedientes", tags=["expedientes"])
-
-_EXPEDIENTES: list[ExpedienteRead] = []
 
 
 @router.post("/", response_model=ExpedienteRead, status_code=status.HTTP_201_CREATED)
 def create_expediente(payload: ExpedienteCreate) -> ExpedienteRead:
-    """Cria um expediente em memória.
+    """Cria um expediente no Supabase.
 
     Args:
         payload: Dados de entrada para criação do expediente.
@@ -20,19 +19,16 @@ def create_expediente(payload: ExpedienteCreate) -> ExpedienteRead:
     Returns:
         ExpedienteRead: Expediente criado com identificador gerado.
     """
-    expediente = ExpedienteRead(
-        id=uuid4(),
-        funcionario_id=payload.funcionario_id,
-        data_hora_inicio=payload.data_hora_inicio,
-        data_hora_fim=payload.data_hora_fim,
+    expediente = supabase_service.create_row(
+        settings.supabase_expedientes_table,
+        payload.model_dump(mode="json"),
     )
-    _EXPEDIENTES.append(expediente)
-    return expediente
+    return ExpedienteRead.model_validate(expediente)
 
 
 @router.get("/", response_model=list[ExpedienteRead])
 def list_expedientes() -> list[ExpedienteRead]:
-    """Lista os expedientes cadastrados em memória.
+    """Lista os expedientes cadastrados no Supabase.
 
     Args:
         None.
@@ -40,7 +36,8 @@ def list_expedientes() -> list[ExpedienteRead]:
     Returns:
         list[ExpedienteRead]: Coleção de expedientes cadastrados.
     """
-    return _EXPEDIENTES
+    expedientes = supabase_service.list_rows(settings.supabase_expedientes_table)
+    return [ExpedienteRead.model_validate(expediente) for expediente in expedientes]
 
 
 @router.get("/{expediente_id}", response_model=ExpedienteRead)
@@ -51,23 +48,15 @@ def get_expediente(expediente_id: UUID) -> ExpedienteRead:
         expediente_id: Identificador UUID do expediente.
 
     Returns:
-        ExpedienteRead: Expediente encontrado ou objeto fallback.
+        ExpedienteRead: Expediente encontrado.
     """
-    for expediente in _EXPEDIENTES:
-        if expediente.id == expediente_id:
-            return expediente
-    fallback = ExpedienteRead(
-        id=expediente_id,
-        funcionario_id=uuid4(),
-        data_hora_inicio=datetime.now(timezone.utc),
-        data_hora_fim=None,
-    )
-    return fallback
+    expediente = supabase_service.get_row(settings.supabase_expedientes_table, expediente_id)
+    return ExpedienteRead.model_validate(expediente)
 
 
 @router.put("/{expediente_id}", response_model=ExpedienteRead)
 def update_expediente(expediente_id: UUID, payload: ExpedienteUpdate) -> ExpedienteRead:
-    """Atualiza parcialmente um expediente em memória.
+    """Atualiza parcialmente um expediente no Supabase.
 
     Args:
         expediente_id: Identificador UUID do expediente.
@@ -79,18 +68,16 @@ def update_expediente(expediente_id: UUID, payload: ExpedienteUpdate) -> Expedie
     Raises:
         HTTPException: Quando o expediente não é encontrado.
     """
-
-    for indice, expediente in enumerate(_EXPEDIENTES):
-        if expediente.id == expediente_id:
-            atualizado = expediente.model_copy(update=payload.model_dump(exclude_unset=True))
-            _EXPEDIENTES[indice] = atualizado
-            return atualizado
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Expediente não encontrado")
+    atualizacoes = payload.model_dump(mode="json", exclude_unset=True)
+    if not atualizacoes:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Nenhum campo enviado para atualização")
+    expediente = supabase_service.update_row(settings.supabase_expedientes_table, expediente_id, atualizacoes)
+    return ExpedienteRead.model_validate(expediente)
 
 
 @router.delete("/{expediente_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_expediente(expediente_id: UUID) -> None:
-    """Remove um expediente em memória.
+    """Remove um expediente no Supabase.
 
     Args:
         expediente_id: Identificador UUID do expediente.
@@ -101,9 +88,5 @@ def delete_expediente(expediente_id: UUID) -> None:
     Raises:
         HTTPException: Quando o expediente não é encontrado.
     """
-
-    for indice, expediente in enumerate(_EXPEDIENTES):
-        if expediente.id == expediente_id:
-            del _EXPEDIENTES[indice]
-            return None
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Expediente não encontrado")
+    supabase_service.delete_row(settings.supabase_expedientes_table, expediente_id)
+    return None

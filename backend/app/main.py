@@ -1,11 +1,12 @@
 from fastapi import FastAPI
 
 from app.api.v1.router import api_router
+from app.core.config import settings
 
 app = FastAPI(
-    title="Pontuara API",
+    title=settings.app_name,
     description="API inicial do projeto Pontuara.",
-    version="0.1.0",
+    version=settings.app_version,
 )
 
 app.include_router(api_router, prefix="/api/v1")
@@ -21,4 +22,7 @@ def healthcheck() -> dict[str, str]:
     Returns:
         dict[str, str]: Resposta de saúde da aplicação.
     """
-    return {"status": "ok"}
+    return {
+        "status": "ok",
+        "supabase_configured": "true" if settings.supabase_configured else "false",
+    }

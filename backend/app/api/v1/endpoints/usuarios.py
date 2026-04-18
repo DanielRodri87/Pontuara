@@ -1,18 +1,17 @@
-from datetime import datetime, timezone
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, status
 
+from app.core.config import settings
 from app.schemas.usuario import UsuarioCreate, UsuarioRead, UsuarioUpdate
+from app.services.supabase import supabase_service
 
 router = APIRouter(prefix="/usuarios", tags=["usuarios"])
-
-_USUARIOS: list[UsuarioRead] = []
 
 
 @router.post("/", response_model=UsuarioRead, status_code=status.HTTP_201_CREATED)
 def create_usuario(payload: UsuarioCreate) -> UsuarioRead:
-    """Cria um usuário em memória.
+    """Cria um usuário no Supabase.
 
     Args:
         payload: Dados de entrada para criação do usuário.
@@ -20,22 +19,16 @@ def create_usuario(payload: UsuarioCreate) -> UsuarioRead:
     Returns:
         UsuarioRead: Usuário criado com `id` e `criado_em`.
     """
-    usuario = UsuarioRead(
-        id=uuid4(),
-        criado_em=datetime.now(timezone.utc),
-        nome=payload.nome,
-        sobrenome=payload.sobrenome,
-        email=payload.email,
-        telefone=payload.telefone,
-        tipo_usuario=payload.tipo_usuario,
+    usuario = supabase_service.create_row(
+        settings.supabase_usuarios_table,
+        payload.model_dump(mode="json"),
     )
-    _USUARIOS.append(usuario)
-    return usuario
+    return UsuarioRead.model_validate(usuario)
 
 
 @router.get("/", response_model=list[UsuarioRead])
 def list_usuarios() -> list[UsuarioRead]:
-    """Lista os usuários cadastrados em memória.
+    """Lista os usuários cadastrados no Supabase.
 
     Args:
         None.
@@ -43,7 +36,8 @@ def list_usuarios() -> list[UsuarioRead]:
     Returns:
         list[UsuarioRead]: Coleção de usuários cadastrados.
     """
-    return _USUARIOS
+    usuarios = supabase_service.list_rows(settings.supabase_usuarios_table)
+    return [UsuarioRead.model_validate(usuario) for usuario in usuarios]
 
 
 @router.get("/{usuario_id}", response_model=UsuarioRead)
@@ -54,26 +48,15 @@ def get_usuario(usuario_id: UUID) -> UsuarioRead:
         usuario_id: Identificador UUID do usuário.
 
     Returns:
-        UsuarioRead: Usuário encontrado ou objeto fallback.
+        UsuarioRead: Usuário encontrado.
     """
-    for usuario in _USUARIOS:
-        if usuario.id == usuario_id:
-            return usuario
-    fallback = UsuarioRead(
-        id=usuario_id,
-        criado_em=datetime.now(timezone.utc),
-        nome="Usuario",
-        sobrenome="Nao encontrado",
-        email=f"{usuario_id}@example.com",
-        telefone=None,
-        tipo_usuario="funcionario",
-    )
-    return fallback
+    usuario = supabase_service.get_row(settings.supabase_usuarios_table, usuario_id)
+    return UsuarioRead.model_validate(usuario)
 
 
 @router.put("/{usuario_id}", response_model=UsuarioRead)
 def update_usuario(usuario_id: UUID, payload: UsuarioUpdate) -> UsuarioRead:
-    """Atualiza parcialmente um usuário em memória.
+    """Atualiza parcialmente um usuário no Supabase.
 
     Args:
         usuario_id: Identificador UUID do usuário.
@@ -85,18 +68,16 @@ def update_usuario(usuario_id: UUID, payload: UsuarioUpdate) -> UsuarioRead:
     Raises:
         HTTPException: Quando o usuário não é encontrado.
     """
-
-    for indice, usuario in enumerate(_USUARIOS):
-        if usuario.id == usuario_id:
-            atualizado = usuario.model_copy(update=payload.model_dump(exclude_unset=True))
-            _USUARIOS[indice] = atualizado
-            return atualizado
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuário não encontrado")
+    atualizacoes = payload.model_dump(mode="json", exclude_unset=True)
+    if not atualizacoes:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Nenhum campo enviado para atualização")
+    usuario = supabase_service.update_row(settings.supabase_usuarios_table, usuario_id, atualizacoes)
+    return UsuarioRead.model_validate(usuario)
 
 
 @router.delete("/{usuario_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_usuario(usuario_id: UUID) -> None:
-    """Remove um usuário em memória.
+    """Remove um usuário no Supabase.
 
     Args:
         usuario_id: Identificador UUID do usuário.
@@ -107,9 +88,5 @@ def delete_usuario(usuario_id: UUID) -> None:
     Raises:
         HTTPException: Quando o usuário não é encontrado.
     """
-
-    for indice, usuario in enumerate(_USUARIOS):
-        if usuario.id == usuario_id:
-            del _USUARIOS[indice]
-            return None
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuário não encontrado")
+    supabase_service.delete_row(settings.supabase_usuarios_table, usuario_id)
+    return None

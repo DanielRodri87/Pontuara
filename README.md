@@ -70,6 +70,28 @@ O sistema contempla funcionalidades de autenticação, controle de acesso, cadas
 2. Instale as dependências
 3. Execute o projeto
 
+### Configuração do backend com Supabase
+
+1. Crie o arquivo `backend/.env` com base em `backend/.env.example`.
+2. Preencha pelo menos:
+   ```env
+   SUPABASE_URL=https://seu-projeto.supabase.co
+   SUPABASE_KEY=sua-chave-do-supabase
+   ```
+3. Se os nomes das tabelas no Supabase forem diferentes, ajuste:
+   ```env
+   SUPABASE_USUARIOS_TABLE=usuarios
+   SUPABASE_TRABALHOS_TABLE=trabalhos
+   SUPABASE_EXPEDIENTES_TABLE=expedientes
+   ```
+4. Suba o backend normalmente. Os endpoints de `usuarios`, `trabalhos` e `expedientes` passam a usar a API REST do Supabase.
+
+As tabelas do Supabase precisam conter colunas compatíveis com os schemas atuais da API:
+
+- `usuarios`: `id`, `criado_em`, `nome`, `sobrenome`, `email`, `telefone`, `tipo_usuario`, `senha`
+- `trabalhos`: `id`, `criado_em`, `empregador_id`, `titulo`, `descricao`, `categoria`, `projeto`
+- `expedientes`: `id`, `funcionario_id`, `data_hora_inicio`, `data_hora_fim`
+
 ## 📂 Estrutura do repositório
 
   ```
