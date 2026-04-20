@@ -1,13 +1,13 @@
 .page {
   width: 100%;
-  min-height: 100vh;
   background-color: #ffffff;
   display: flex;
   flex-direction: column;
+  /* Compensar a altura da navbar fixa */
+  padding-top: 73px;
 }
 
 .main {
-  flex: 1;
   width: 100%;
   background-color: #f8f9fa;
   position: relative;
@@ -18,13 +18,13 @@
   z-index: 1;
   max-width: 1400px;
   margin: 0 auto;
-  padding: 20px 20px;
+  padding: 40px 40px;
   width: 100%;
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 80px;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 60px;
   align-items: center;
-  min-height: calc(100vh - 80px);
+  min-height: calc(100vh - 100px);
 }
 
 .contentWrapper {
@@ -41,31 +41,30 @@
 }
 
 /* Responsive */
-@media (max-width: 1024px) {
+@media (max-width: 1200px) {
   .heroContainer {
     grid-template-columns: 1fr;
-    gap: 40px;
-    padding: 40px;
+    gap: 60px;
+    padding: 60px 40px;
     min-height: auto;
+  }
+
+  .contentWrapper {
+    text-align: center;
+    align-items: center;
   }
 
   .cardWrapper {
     width: 100%;
     max-width: 448px;
     margin: 0 auto;
-    order: 2;
-  }
-
-  .contentWrapper {
-    order: 1;
-    text-align: center;
   }
 }
 
 @media (max-width: 768px) {
   .heroContainer {
-    padding: 20px;
-    gap: 32px;
+    padding: 40px 20px;
+    gap: 48px;
   }
 
   .cardWrapper {

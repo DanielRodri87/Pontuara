@@ -84,18 +84,20 @@
   font-size: 16px;
   font-weight: 800;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), 
+              background-color 0.2s ease, 
+              box-shadow 0.2s ease;
   margin-top: 12px;
 }
 
 .loginBtn:hover {
   background-color: #2563eb;
-  box-shadow: 0 4px 12px rgba(58, 122, 254, 0.3);
-  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(58, 122, 254, 0.3);
+  transform: scale(1.03) translateY(-2px);
 }
 
 .loginBtn:active {
-  transform: translateY(0);
+  transform: scale(0.98);
 }
 
 /* Google Login Button */
@@ -110,7 +112,10 @@
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), 
+              background-color 0.2s ease, 
+              box-shadow 0.2s ease,
+              border-color 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -120,12 +125,12 @@
 .googleBtn:hover {
   background-color: #f8f9fa;
   border-color: rgba(165, 165, 165, 0.5);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.05);
+  transform: scale(1.03) translateY(-2px);
 }
 
 .googleBtn:active {
-  transform: translateY(0);
+  transform: scale(0.98);
 }
 
 .googleBtn img {
@@ -182,13 +187,29 @@
   .card {
     padding: 32px 24px;
     max-width: 100%;
+    border-radius: 24px;
   }
 
   .title {
     font-size: 20px;
   }
 
+  .subtitle {
+    margin-bottom: 24px;
+  }
+
   .footer {
     justify-content: center;
+    gap: 12px;
+  }
+}
+
+@media (max-width: 375px) {
+  .card {
+    padding: 24px 16px;
+  }
+
+  .loginBtn, .googleBtn {
+    height: 50px;
   }
 }

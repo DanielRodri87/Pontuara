@@ -3,6 +3,9 @@ import Navbar from '@/components/navbar/Navbar';
 import HeroSection from '@/components/hero/HeroSection';
 import LoginCard from '@/components/auth/LoginCard';
 import ParticleBackground from '@/components/particles/ParticleBackground';
+import AboutSection from '@/components/about/AboutSection';
+import FaqSection from '@/components/faq/FaqSection';
+import Footer from '@/components/footer/Footer';
 import styles from './page.module.css';
 
 export default function LoginPage() {
@@ -12,7 +15,7 @@ export default function LoginPage() {
       <Navbar />
 
       {/* Hero Section com Login Card */}
-      <main className={styles.main}>
+      <main id="login" className={styles.main}>
         <ParticleBackground />
         <div className={styles.heroContainer}>
           <div className={styles.contentWrapper}>
@@ -23,6 +26,19 @@ export default function LoginPage() {
           </div>
         </div>
       </main>
+
+      {/* Seção Sobre Nós */}
+      <div id="about">
+        <AboutSection />
+      </div>
+
+      {/* Seção Dúvidas Frequentes */}
+      <div id="faq">
+        <FaqSection />
+      </div>
+
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }

@@ -18,15 +18,15 @@ export default function LoginCard() {
   return (
     <div className={styles.card}>
       {/* Título */}
-      <h2 className={styles.title}>Comece a cuidar do seu tempo</h2>
+      <h2 className={`${styles.title} reveal delay-9`}>Comece a cuidar do seu tempo</h2>
       
       {/* Descrição */}
-      <p className={styles.subtitle}>Preencha as suas credenciais para entrar.</p>
+      <p className={`${styles.subtitle} reveal delay-10`}>Preencha as suas credenciais para entrar.</p>
 
       {/* Formulário */}
       <form onSubmit={handleSubmit} className={styles.form}>
         {/* Email Input */}
-        <div className={styles.inputGroup}>
+        <div className={`${styles.inputGroup} reveal delay-11`}>
           <label htmlFor="email" className={styles.label}>EMAIL</label>
           <input
             type="email"
@@ -40,7 +40,7 @@ export default function LoginCard() {
         </div>
 
         {/* Password Input */}
-        <div className={styles.inputGroup}>
+        <div className={`${styles.inputGroup} reveal delay-12`}>
           <label htmlFor="password" className={styles.label}>SENHA</label>
           <input
             type="password"
@@ -53,21 +53,23 @@ export default function LoginCard() {
           />
         </div>
 
-        {/* Login Button */}
-        <button type="submit" className={styles.loginBtn}>
-          Login
-        </button>
+        <div className="reveal delay-13">
+          <button type="submit" className={styles.loginBtn}>
+            Login
+          </button>
+        </div>
 
-        {/* Google Login Button */}
-        <button type="button" className={styles.googleBtn}>
-          <Image 
-            src="/images/Google.svg" 
-            alt="Google"
-            width={20}
-            height={20}
-          />
-          <span>Logar com Google</span>
-        </button>
+        <div className="reveal delay-14">
+          <button type="button" className={styles.googleBtn}>
+            <Image 
+              src="/images/Google.svg" 
+              alt="Google"
+              width={20}
+              height={20}
+            />
+            <span>Logar com Google</span>
+          </button>
+        </div>
       </form>
 
       {/* Footer Links */}
