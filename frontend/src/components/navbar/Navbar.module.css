@@ -1,0 +1,93 @@
+.navbar {
+  width: 100%;
+  padding: 20px 0;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e7e8e9;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 60px;
+}
+
+.logo {
+  flex-shrink: 0;
+}
+
+.logo img {
+  display: block;
+}
+
+.navLinks {
+  list-style: none;
+  display: flex;
+  gap: 48px;
+  margin: 0;
+  padding: 0;
+  flex: 1;
+}
+
+.navLinks a {
+  text-decoration: none;
+  color: #191c1d;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.5;
+  transition: color 0.2s ease;
+  cursor: pointer;
+}
+
+.navLinks a:hover {
+  color: #3a7afe;
+}
+
+.cadastreBtn {
+  background-color: #3a7afe;
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  padding: 12px 24px;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(58, 122, 254, 0.2);
+}
+
+.cadastreBtn:hover {
+  background-color: #2563eb;
+  box-shadow: 0 4px 12px rgba(58, 122, 254, 0.3);
+  transform: translateY(-2px);
+}
+
+.cadastreBtn:active {
+  transform: translateY(0);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .container {
+    padding: 0 20px;
+    gap: 20px;
+  }
+
+  .navLinks {
+    gap: 24px;
+    display: none;
+  }
+
+  .navLinks.active {
+    display: flex;
+  }
+}
