@@ -208,3 +208,20 @@ __marimo__/
 
 .env
 .codex
+
+# Frontend (Node.js/Next.js)
+node_modules/
+.next/
+out/
+.env*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.vercel
+.turbo
+frontend/package.json
+frontend/package-lock.json
+frontend/tsconfig.json
+frontend/next.config.mjs
+frontend/next-env.d.ts
+frontend/Dockerfile

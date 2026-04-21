@@ -1,0 +1,212 @@
+.section {
+  background-color: #f8f9fa;
+  padding: 100px 0;
+  width: 100%;
+  overflow: hidden;
+}
+
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 40px;
+  display: flex;
+  gap: 80px;
+  align-items: flex-start;
+  position: relative;
+}
+
+.glowEffect {
+  position: absolute;
+  top: 40%;
+  right: 5%;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(58, 122, 254, 0.05) 0%, rgba(58, 122, 254, 0) 70%);
+  border-radius: 50%;
+  filter: blur(60px);
+  z-index: 0;
+  pointer-events: none;
+  animation: floatGlow 12s infinite ease-in-out alternate;
+  will-change: transform;
+}
+
+@keyframes floatGlow {
+  0% { transform: translate(0, 0) scale(1); }
+  100% { transform: translate(-20px, 30px) scale(1.03); }
+}
+
+.leftColumn {
+  flex: 1;
+  max-width: 500px;
+  display: flex;
+  flex-direction: column;
+}
+
+.title {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 48px;
+  font-weight: 800;
+  color: #191c1d;
+  margin: 0 0 24px 0;
+  line-height: 1.2;
+  letter-spacing: -0.04em;
+}
+
+.subtitle {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 18px;
+  font-weight: 400;
+  color: #191c1d;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.rightColumn {
+  flex: 1.5;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: relative;
+  z-index: 1;
+  /*
+   * Altura mínima = 4 headers (76px) + 1 conteúdo aberto (160px + 32px padding) + 3 gaps (16px)
+   * Isso garante que o footer nunca se mova quando cards abrem/fecham.
+   */
+  min-height: 580px;
+}
+
+.card {
+  background-color: #ffffff;
+  border-radius: 24px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: box-shadow 0.3s ease, border-color 0.3s ease, background-color 0.3s ease;
+  position: relative;
+  z-index: 1;
+}
+
+.card:not(.open):hover {
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.05);
+  border-color: rgba(0, 0, 0, 0.04);
+  background-color: #fafafa;
+}
+
+.card.open {
+  cursor: default;
+  border-color: rgba(58, 122, 254, 0.1);
+  box-shadow: 0 16px 40px rgba(58, 122, 254, 0.06);
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 32px;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.question {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: #191c1d;
+  margin: 0;
+  padding-right: 24px;
+}
+
+.iconWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  /* Mesma duração do accordion para sincronismo perfeito */
+  transition: transform 0.7s cubic-bezier(0.32, 0.72, 0, 1);
+  flex-shrink: 0;
+}
+
+.iconOpen {
+  transform: rotate(0deg);
+}
+
+.iconClosed {
+  transform: rotate(180deg);
+}
+
+.cardContent {
+  padding: 0 32px;
+  /* height com valor numérico exato = animação verdadeiramente fluida */
+  height: 0;
+  overflow: hidden;
+  opacity: 0;
+  /* 700ms com curva smart animate / expo-out */
+  transition: height 0.7s cubic-bezier(0.32, 0.72, 0, 1),
+              opacity 0.45s ease,
+              padding-bottom 0.7s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.card.open .cardContent {
+  height: 160px;
+  opacity: 1;
+  padding-bottom: 28px;
+}
+
+.answer {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  color: #364a55;
+  line-height: 1.6;
+  margin: 0;
+  text-align: justify;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .container {
+    flex-direction: column;
+    gap: 48px;
+    align-items: stretch;
+  }
+
+  .leftColumn {
+    max-width: 100%;
+    text-align: center;
+  }
+
+  .rightColumn {
+    width: 100%;
+    min-height: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .section {
+    padding: 60px 0;
+  }
+
+  .title {
+    font-size: 32px;
+  }
+
+  .subtitle {
+    font-size: 16px;
+  }
+
+  .card.open .cardContent {
+    height: 240px;
+  }
+
+  .cardHeader {
+    padding: 20px 24px;
+  }
+
+  .cardContent {
+    padding: 0 24px;
+  }
+}
