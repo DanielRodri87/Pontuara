@@ -213,5 +213,53 @@ class SupabaseService:
         if not data:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Registro não encontrado")
 
+    def login_user(self, email: str, password: str) -> dict[str, object]:
+        """Autentica um utilizador através da API Auth do Supabase.
+
+        Args:
+            email: O e-mail do utilizador.
+            password: A palavra-passe do utilizador.
+
+        Returns:
+            dict[str, object]: Dados da sessão (incluindo access_token) retornados pelo Supabase.
+            
+        Raises:
+            HTTPException: Quando as credenciais são inválidas ou há falha na comunicação.
+        """
+        if not settings.supabase_url or not settings.supabase_key:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Supabase não configurado.",
+            )
+
+        auth_url = f"{settings.supabase_url.rstrip('/')}/auth/v1/token"
+        
+        headers = {
+            "apikey": settings.supabase_key,
+            "Content-Type": "application/json",
+        }
+        
+        try:
+            response = httpx.post(
+                auth_url,
+                params={"grant_type": "password"},
+                headers=headers,
+                json={"email": email, "password": password},
+                timeout=settings.supabase_timeout,
+            )
+        except httpx.RequestError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail=f"Não foi possível conectar ao Supabase Auth: {exc}",
+            ) from exc
+
+        if response.status_code >= 400:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, 
+                detail="E-mail ou palavra-passe incorretos."
+            )
+
+        return response.json()
+
 
 supabase_service = SupabaseService()
