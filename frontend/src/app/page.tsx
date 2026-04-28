@@ -1,4 +1,6 @@
-import React from 'react';
+'use client';
+
+import React, { useEffect } from 'react';
 import Navbar from '@/components/navbar/Navbar';
 import HeroSection from '@/components/hero/HeroSection';
 import LoginCard from '@/components/auth/LoginCard';
@@ -9,6 +11,22 @@ import Footer from '@/components/footer/Footer';
 import styles from './page.module.css';
 
 export default function LoginPage() {
+  useEffect(() => {
+    // Handle scroll to hash on load
+    const hash = window.location.hash;
+    if (hash) {
+      const id = hash.replace('#', '');
+      const el = document.getElementById(id);
+      if (el) {
+        setTimeout(() => {
+          const navHeight = 73;
+          const top = el.getBoundingClientRect().top + window.scrollY - navHeight;
+          window.scrollTo({ top, behavior: 'smooth' });
+        }, 100);
+      }
+    }
+  }, []);
+
   return (
     <div className={styles.page}>
       {/* Navbar */}

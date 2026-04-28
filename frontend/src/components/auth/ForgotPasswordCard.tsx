@@ -19,7 +19,6 @@ export default function ForgotPasswordCard() {
     setSuccessMsg('');
 
     try {
-      // Chamada para o backend para recuperação de senha
       const response = await api.post('/api/v1/auth/forgot-password', {
         email,
       });
@@ -40,22 +39,21 @@ export default function ForgotPasswordCard() {
   };
 
   return (
-    <div className={styles.card}>
+    <div className={`${styles.card} reveal`}>
       <div className={styles.iconContainer}>
         <Image
           className={styles.lockIcon}
-          src="/images/Overlay.png"
+          src="/images/overlay.svg"
           alt="Recuperar senha"
-          width={56}
-          height={56}
+          width={32}
+          height={32}
           priority
         />
       </div>
 
       <h2 className={styles.title}>Perdeu o caminho?</h2>
       <p className={styles.subtitle}>
-        Não se preocupe! O Pontuará ajudará 
-        você a recuperar o seu acesso
+        Não se preocupe! O Pontuará ajudará você a recuperar o seu acesso.
       </p>
 
       {errorMsg && (
@@ -73,16 +71,19 @@ export default function ForgotPasswordCard() {
       <form onSubmit={handleSubmit} className={styles.form}>
         <div className={styles.inputGroup}>
           <label htmlFor="email" className={styles.label}>EMAIL</label>
-          <input
-            type="email"
-            id="email"
-            className={styles.input}
-            placeholder="@pontuara.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            disabled={loading || !!successMsg}
-          />
+          <div className={styles.inputWrapper}>
+            <span className={styles.inputIcon}>@</span>
+            <input
+              type="email"
+              id="email"
+              className={styles.input}
+              placeholder="pontuara.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              disabled={loading || !!successMsg}
+            />
+          </div>
         </div>
 
         <button
@@ -94,9 +95,16 @@ export default function ForgotPasswordCard() {
         </button>
       </form>
 
-      <div className={styles.linkContainer}>
+      <div className={styles.footer}>
         <Link href="/" className={styles.backLink}>
-          ← Voltar ao Login
+          <Image 
+            src="/images/back.svg" 
+            alt="Back" 
+            width={16} 
+            height={16} 
+            className={styles.backIcon}
+          />
+          Voltar ao Login
         </Link>
       </div>
     </div>
