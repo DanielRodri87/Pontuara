@@ -2,11 +2,15 @@
 
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
+import { useRouter, usePathname } from 'next/navigation';
 import styles from './Navbar.module.css';
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
+  const router = useRouter();
+  const pathname = usePathname();
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -34,12 +38,16 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const scrollTo = (id: string) => {
-    const el = document.getElementById(id);
-    if (el) {
-      const navHeight = 73; // altura aproximada da navbar fixa
-      const top = el.getBoundingClientRect().top + window.scrollY - navHeight;
-      window.scrollTo({ top, behavior: 'smooth' });
+  const handleNavClick = (id: string) => {
+    if (pathname === '/') {
+      const el = document.getElementById(id);
+      if (el) {
+        const navHeight = 73;
+        const top = el.getBoundingClientRect().top + window.scrollY - navHeight;
+        window.scrollTo({ top, behavior: 'smooth' });
+      }
+    } else {
+      router.push(`/#${id}`);
     }
     setIsMenuOpen(false);
   };
@@ -76,19 +84,21 @@ export default function Navbar() {
 
         {/* Navigation Links */}
         <ul className={`${styles.navLinks} ${isMenuOpen ? styles.active : ''}`}>
-          <li className="reveal delay-2"><button onClick={() => scrollTo('login')}>Login</button></li>
-          <li className="reveal delay-3"><button onClick={() => scrollTo('about')}>Sobre Nós</button></li>
-          <li className="reveal delay-4"><button onClick={() => scrollTo('faq')}>Perguntas Frequentes</button></li>
+          <li className="reveal delay-2"><button onClick={() => handleNavClick('login')}>Login</button></li>
+          <li className="reveal delay-3"><button onClick={() => handleNavClick('about')}>Sobre Nós</button></li>
+          <li className="reveal delay-4"><button onClick={() => handleNavClick('faq')}>Perguntas Frequentes</button></li>
           <li className={styles.mobileOnly}>
-            <button className={styles.cadastreBtnMobile}>Cadastre-se</button>
+            <Link href="/cadastro" className={styles.cadastreBtnMobile} onClick={() => setIsMenuOpen(false)}>
+              Cadastre-se
+            </Link>
           </li>
         </ul>
 
         {/* Cadastre-se Button (Desktop) */}
         <div className="reveal delay-5">
-          <button className={styles.cadastreBtn}>
+          <Link href="/cadastro" className={styles.cadastreBtn}>
             Cadastre-se
-          </button>
+          </Link>
         </div>
       </div>
     </nav>
