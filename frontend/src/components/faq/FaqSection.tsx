@@ -27,9 +27,20 @@ const faqData = [
   }
 ];
 
+/**
+ * Componente que renderiza a seção de Dúvidas Frequentes (FAQ).
+ * Exibe uma lista de perguntas e respostas com efeito sanfona (accordion).
+ * 
+ * @returns {JSX.Element} Seção de FAQ renderizada.
+ */
 export default function FaqSection() {
   const [openCardId, setOpenCardId] = useState<number>(1);
 
+  /**
+   * Manipula o clique em um cartão de pergunta, expandindo-o e recolhendo os demais.
+   * 
+   * @param {number} id - O identificador único da pergunta clicada.
+   */
   const handleCardClick = (id: number) => {
     if (openCardId !== id) {
       setOpenCardId(id);

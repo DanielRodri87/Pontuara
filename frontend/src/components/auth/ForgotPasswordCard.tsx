@@ -6,12 +6,24 @@ import Image from 'next/image';
 import { api } from '../../services/api';
 import styles from './ForgotPasswordCard.module.css';
 
+/**
+ * Componente de cartão para recuperação de senha.
+ * Exibe um formulário solicitando o e-mail do usuário para envio do link.
+ * 
+ * @returns {JSX.Element} Cartão de recuperação de senha.
+ */
 export default function ForgotPasswordCard() {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
+  /**
+   * Manipula a submissão do formulário de recuperação de senha.
+   * Realiza a requisição na API para o disparo de e-mail.
+   * 
+   * @param {React.FormEvent} e - O evento de submissão do formulário.
+   */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);

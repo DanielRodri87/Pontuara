@@ -6,12 +6,21 @@ import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import styles from './Navbar.module.css';
 
+/**
+ * Barra de navegação principal (Navbar).
+ * Inclui responsividade, barra de progresso de scroll da página e links âncora.
+ * 
+ * @returns {JSX.Element} Componente de barra de navegação.
+ */
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
   const router = useRouter();
   const pathname = usePathname();
 
+  /**
+   * Alterna a visibilidade do menu de navegação em dispositivos móveis.
+   */
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
   };
@@ -38,6 +47,12 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  /**
+   * Manipula o clique nos links da navbar. Realiza o scroll suave caso esteja na home,
+   * ou redireciona o usuário para a âncora na home se estiver em outra página.
+   * 
+   * @param {string} id - O ID do elemento âncora na home page.
+   */
   const handleNavClick = (id: string) => {
     if (pathname === '/') {
       const el = document.getElementById(id);

@@ -80,9 +80,9 @@
   font-weight: 800;
   cursor: pointer;
   /* Bouncy spring transition */
-  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), 
-              background-color 0.2s ease, 
-              box-shadow 0.2s ease;
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+    background-color 0.2s ease,
+    box-shadow 0.2s ease;
   flex-shrink: 0;
   box-shadow: 0 2px 8px rgba(58, 122, 254, 0.2);
   display: block;
@@ -127,8 +127,13 @@
   transition: all 0.3s ease;
 }
 
-.hamburger::before { top: -8px; }
-.hamburger::after { bottom: -8px; }
+.hamburger::before {
+  top: -8px;
+}
+
+.hamburger::after {
+  bottom: -8px;
+}
 
 .menuButton.open .hamburger {
   background-color: transparent;

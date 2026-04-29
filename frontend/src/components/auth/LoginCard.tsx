@@ -7,12 +7,23 @@ import { api } from '@/services/api'; // O seu cliente axios já configurado
 import { supabase } from '@/services/supabase';
 import styles from './LoginCard.module.css';
 
+/**
+ * Componente de cartão de login da plataforma.
+ * Oferece login por e-mail/senha ou integração OAuth com Google.
+ * 
+ * @returns {JSX.Element} O formulário de login.
+ */
 export default function LoginCard() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
+  /**
+   * Manipula a submissão do formulário de login tradicional.
+   * 
+   * @param {React.FormEvent} e - O evento de envio do formulário.
+   */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -43,6 +54,9 @@ export default function LoginCard() {
     }
   };
 
+  /**
+   * Inicia o fluxo de login OAuth através do Google (Supabase).
+   */
   const handleGoogleLogin = async () => {
     if (!supabase) {
       setErrorMsg('Configure NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY no frontend.');
