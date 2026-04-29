@@ -10,6 +10,12 @@ import FaqSection from '@/components/faq/FaqSection';
 import Footer from '@/components/footer/Footer';
 import styles from './page.module.css';
 
+/**
+ * Página inicial (Landing Page e Login).
+ * Apresenta a plataforma e inclui a área para autenticação do usuário.
+ * 
+ * @returns {JSX.Element} Página de login e apresentação.
+ */
 export default function LoginPage() {
   useEffect(() => {
     // Handle scroll to hash on load

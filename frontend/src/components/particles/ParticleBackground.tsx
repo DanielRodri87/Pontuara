@@ -3,6 +3,13 @@
 import { useEffect, useRef } from 'react';
 import styles from './ParticleBackground.module.css';
 
+/**
+ * Componente de fundo animado utilizando partículas em um canvas HTML5.
+ * Renderiza pontos flutuantes com interatividade com o mouse e conexões
+ * quando próximos uns dos outros.
+ * 
+ * @returns {JSX.Element} Fundo com efeito de partículas.
+ */
 export default function ParticleBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 

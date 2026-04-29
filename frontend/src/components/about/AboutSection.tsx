@@ -4,6 +4,12 @@ import React from 'react';
 import Image from 'next/image';
 import styles from './AboutSection.module.css';
 
+/**
+ * Componente que renderiza a seção "Sobre Nós".
+ * Exibe os pilares e vantagens da plataforma (Registro, Escala, Flexibilidade, Conformidade).
+ * 
+ * @returns {JSX.Element} Seção "Sobre Nós" renderizada.
+ */
 export default function AboutSection() {
   return (
     <section className={styles.section}>
