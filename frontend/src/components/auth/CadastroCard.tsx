@@ -3,11 +3,12 @@
 import React, { useState, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { api } from '@/services/api';
 import styles from './CadastroCard.module.css';
 
 /**
  * Componente que renderiza o fluxo de cadastro em etapas (wizard).
- * Coleta informações do usuário e, no final, pode gerar um convite ou registrar o usuário.
+ * Coleta informações do usuário e, no final, registra no backend via API.
  * 
  * @returns {JSX.Element} Cartão de cadastro multi-etapas.
  */
@@ -26,6 +27,8 @@ export default function CadastroCard() {
   const [showPopup, setShowPopup] = useState(false);
   const [generatedCode, setGeneratedCode] = useState('');
   const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   /**
@@ -88,21 +91,71 @@ export default function CadastroCard() {
   };
 
   /**
-   * Avança para a próxima etapa do cadastro ou finaliza o processo.
+   * Valida os dados do formulário antes de enviar.
    * 
-   * @param {React.FormEvent} e - O evento do formulário submetido.
+   * @returns {boolean} True se todos os dados são válidos, false caso contrário.
    */
-  const handleNext = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (step < 3) {
-      setStep(step + 1);
-    } else {
-      if (!formData.userType) {
-        // Optional: you could show a nicer error here
-        alert("Por favor, selecione o tipo de usuário (Funcionário ou Empregador).");
-        return;
-      }
+  const validateFormData = (): boolean => {
+    setErrorMsg('');
 
+    if (!formData.firstName.trim()) {
+      setErrorMsg('Por favor, preencha o nome.');
+      return false;
+    }
+
+    if (!formData.lastName.trim()) {
+      setErrorMsg('Por favor, preencha o sobrenome.');
+      return false;
+    }
+
+    if (!formData.email.trim()) {
+      setErrorMsg('Por favor, preencha o email.');
+      return false;
+    }
+
+    if (formData.password.length < 6) {
+      setErrorMsg('A senha deve ter no mínimo 6 caracteres.');
+      return false;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      setErrorMsg('As senhas não coincidem.');
+      return false;
+    }
+
+    if (!formData.userType) {
+      setErrorMsg('Por favor, selecione o tipo de usuário.');
+      return false;
+    }
+
+    return true;
+  };
+
+  /**
+   * Submete o formulário de cadastro para o backend.
+   */
+  const submitSignup = async () => {
+    if (!validateFormData()) {
+      return;
+    }
+
+    setLoading(true);
+    setErrorMsg('');
+
+    try {
+      // Chama o endpoint de signup no backend
+      const response = await api.post('/api/v1/auth/signup', {
+        nome: formData.firstName,
+        sobrenome: formData.lastName,
+        email: formData.email,
+        telefone: formData.phone,
+        password: formData.password,
+        tipo_usuario: formData.userType,
+      });
+
+      console.log('Usuário cadastrado com sucesso:', response.data);
+
+      // Gera código se for empregador
       if (formData.userType === 'empregador') {
         const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
         let code = '';
@@ -112,17 +165,41 @@ export default function CadastroCard() {
           if (/[0-9]/.test(char)) hasNumber = true;
           code += char;
         }
-        // Garante que tenha pelo menos um número
         if (!hasNumber) {
           const randIndex = Math.floor(Math.random() * 15);
           code = code.substring(0, randIndex) + Math.floor(Math.random() * 10) + code.substring(randIndex + 1);
         }
         setGeneratedCode(code);
-      } else {
-        console.log('Final data:', formData);
       }
-      
+
       setShowPopup(true);
+    } catch (error: any) {
+      console.error('Erro ao cadastrar:', error);
+      if (error.response && error.response.data && error.response.data.detail) {
+        setErrorMsg(error.response.data.detail);
+      } else if (error.response && error.response.status === 422) {
+        setErrorMsg('Dados inválidos. Verifique os campos preenchidos.');
+      } else {
+        setErrorMsg('Erro ao criar conta. Tente novamente mais tarde.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * Avança para a próxima etapa do cadastro ou finaliza o processo.
+   * 
+   * @param {React.FormEvent} e - O evento do formulário submetido.
+   */
+  const handleNext = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (step < 3) {
+      setStep(step + 1);
+    } else {
+      // Última etapa: validar e submeter
+      submitSignup();
     }
   };
 
@@ -165,6 +242,12 @@ export default function CadastroCard() {
         </p>
       </div>
 
+      {errorMsg && (
+        <div style={{ color: '#ef4444', fontSize: '14px', marginBottom: '16px', textAlign: 'center', fontWeight: '500' }}>
+          {errorMsg}
+        </div>
+      )}
+
       <form onSubmit={handleNext} className={styles.form}>
         {step === 1 && (
           <>
@@ -176,6 +259,7 @@ export default function CadastroCard() {
                   onChange={handleImageChange} 
                   accept="image/*" 
                   style={{ display: 'none' }} 
+                  disabled={loading}
                 />
                 {profileImage ? (
                   <img 
@@ -216,6 +300,7 @@ export default function CadastroCard() {
                   value={formData.firstName}
                   onChange={handleChange}
                   required
+                  disabled={loading}
                 />
               </div>
               <div className={styles.inputGroup}>
@@ -228,6 +313,7 @@ export default function CadastroCard() {
                   value={formData.lastName}
                   onChange={handleChange}
                   required
+                  disabled={loading}
                 />
               </div>
             </div>
@@ -246,6 +332,7 @@ export default function CadastroCard() {
                 value={formData.email}
                 onChange={handleChange}
                 required
+                disabled={loading}
               />
             </div>
 
@@ -258,7 +345,7 @@ export default function CadastroCard() {
                 placeholder="(DDD) 0000000-0000"
                 value={formData.phone}
                 onChange={handleChange}
-                required
+                disabled={loading}
               />
             </div>
 
@@ -273,6 +360,7 @@ export default function CadastroCard() {
                   value={formData.password}
                   onChange={handleChange}
                   required
+                  disabled={loading}
                 />
               </div>
               <div className={styles.inputGroup}>
@@ -285,6 +373,7 @@ export default function CadastroCard() {
                   value={formData.confirmPassword}
                   onChange={handleChange}
                   required
+                  disabled={loading}
                 />
               </div>
             </div>
@@ -298,14 +387,14 @@ export default function CadastroCard() {
               <div className={styles.radioGroup}>
                 <div 
                   className={styles.radioOption} 
-                  onClick={() => setFormData(prev => ({ ...prev, userType: 'funcionario' }))}
+                  onClick={() => !loading && setFormData(prev => ({ ...prev, userType: 'funcionario' }))}
                 >
                   <div className={`${styles.radioCircle} ${formData.userType === 'funcionario' ? styles.selected : ''}`}></div>
                   <span className={styles.radioLabel}>Funcionário</span>
                 </div>
                 <div 
                   className={styles.radioOption} 
-                  onClick={() => setFormData(prev => ({ ...prev, userType: 'empregador' }))}
+                  onClick={() => !loading && setFormData(prev => ({ ...prev, userType: 'empregador' }))}
                 >
                   <div className={`${styles.radioCircle} ${formData.userType === 'empregador' ? styles.selected : ''}`}></div>
                   <span className={styles.radioLabel}>Empregador</span>
@@ -322,15 +411,15 @@ export default function CadastroCard() {
                 placeholder="Informe o código da sua organização"
                 value={formData.inviteCode}
                 onChange={handleChange}
-                required={formData.userType === 'funcionario'}
+                disabled={loading}
               />
             </div>
           </>
         )}
 
-        <button type="submit" className={styles.nextBtn}>
-          {step === 3 ? 'Cadastrar' : 'Próximo Passo'}
-          {step !== 3 && (
+        <button type="submit" className={styles.nextBtn} disabled={loading}>
+          {loading ? 'Cadastrando...' : (step === 3 ? 'Cadastrar' : 'Próximo Passo')}
+          {!loading && step !== 3 && (
             <Image 
               src="/images/setacad.svg" 
               alt="Seta" 
@@ -345,7 +434,7 @@ export default function CadastroCard() {
       <div className={styles.footer}>
         <div className={styles.footerContent}>
           {step > 1 && (
-            <button onClick={handleBack} className={styles.backLink}>
+            <button onClick={handleBack} className={styles.backLink} disabled={loading}>
               <Image 
                 src="/images/back.svg" 
                 alt="Back" 
@@ -378,7 +467,7 @@ export default function CadastroCard() {
                 </p>
                 <div className={styles.codeContainer}>
                   <span className={styles.codeValue}>{generatedCode}</span>
-                  <button onClick={copyToClipboard} className={styles.copyBtn} title="Copiar código">
+                  <button onClick={copyToClipboard} className={styles.copyBtn} title="Copiar código" type="button">
                     <Image 
                       src="/images/copy.svg" 
                       alt="Copiar" 
@@ -397,13 +486,14 @@ export default function CadastroCard() {
                 </p>
               </>
             )}
-
+            
             <button 
               onClick={() => {
                 setShowPopup(false);
                 window.location.href = '/';
               }} 
               className={styles.closeBtn}
+              type="button"
             >
               Voltar ao login
             </button>

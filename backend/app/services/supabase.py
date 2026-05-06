@@ -4,6 +4,9 @@ import httpx
 from fastapi import HTTPException, status
 
 from app.core.config import settings
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class SupabaseService:
@@ -260,6 +263,78 @@ class SupabaseService:
             )
 
         return response.json()
+
+    def signup_user(self, email: str, password: str) -> dict[str, object]:
+        """Cria um novo utilizador no Supabase Auth (signup).
+
+        Args:
+            email: O e-mail do novo utilizador.
+            password: A palavra-passe do novo utilizador.
+
+        Returns:
+            dict[str, object]: Dados do usuário criado retornados pelo Supabase Auth.
+            
+        Raises:
+            HTTPException: Quando há erro na criação (ex: email já existe).
+        """
+        try:
+            if not settings.supabase_url or not settings.supabase_key:
+                logger.error("Supabase não está configurado")
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail="Supabase não configurado.",
+                )
+
+            auth_url = f"{settings.supabase_url.rstrip('/')}/auth/v1/signup"
+            logger.info(f"Tentando criar usuário em: {auth_url}")
+            
+            headers = {
+                "apikey": settings.supabase_key,
+                "Content-Type": "application/json",
+            }
+            
+            logger.info(f"Enviando requisição POST para signup com email: {email}")
+            response = httpx.post(
+                auth_url,
+                headers=headers,
+                json={"email": email, "password": password},
+                timeout=settings.supabase_timeout,
+            )
+            logger.info(f"Resposta do Supabase Auth: status={response.status_code}")
+            
+            if response.status_code >= 400:
+                error_detail = "Erro ao criar usuário. E-mail pode já estar registrado."
+                try:
+                    payload = response.json()
+                    logger.error(f"Erro ao criar usuário: {payload}")
+                    if isinstance(payload, dict):
+                        error_detail = payload.get("message") or payload.get("error_description") or error_detail
+                except ValueError:
+                    logger.error(f"Não foi possível parsear resposta de erro: {response.text}")
+                raise HTTPException(
+                    status_code=response.status_code, 
+                    detail=error_detail
+                )
+
+            result = response.json()
+            logger.info(f"Usuário criado com sucesso no Auth: {result}")
+            return result
+            
+        except HTTPException as e:
+            logger.error(f"HTTPException durante signup: {e.detail}")
+            raise e
+        except httpx.RequestError as exc:
+            logger.error(f"Erro de conexão com Supabase: {exc}")
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail=f"Não foi possível conectar ao Supabase Auth: {exc}",
+            ) from exc
+        except Exception as e:
+            logger.error(f"Erro inesperado durante signup: {str(e)}", exc_info=True)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Erro inesperado ao criar usuário: {str(e)}"
+            )
 
 
 supabase_service = SupabaseService()
