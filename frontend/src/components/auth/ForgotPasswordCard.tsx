@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useSearchParams } from 'next/navigation';
 import { api } from '../../services/api';
 import styles from './ForgotPasswordCard.module.css';
 
@@ -13,38 +14,111 @@ import styles from './ForgotPasswordCard.module.css';
  * @returns {JSX.Element} Cartão de recuperação de senha.
  */
 export default function ForgotPasswordCard() {
+  const searchParams = useSearchParams();
+  const [step, setStep] = useState<'email' | 'reset'>('email');
   const [email, setEmail] = useState('');
+  const [token, setToken] = useState('');
+  
+  useEffect(() => {
+    // 1. Verificar query params (?token_hash=...)
+    const tokenHash = searchParams.get('token_hash');
+    const type = searchParams.get('type');
+    
+    if (tokenHash && type === 'recovery') {
+      setToken(tokenHash);
+      setStep('reset');
+      return;
+    }
+
+    // 2. Verificar fragment (#error=... ou #access_token=...)
+    // O Supabase às vezes envia os dados no fragmento da URL
+    const hash = window.location.hash;
+    if (hash) {
+      const params = new URLSearchParams(hash.substring(1)); // remove o '#'
+      
+      const error = params.get('error_description');
+      if (error) {
+        setErrorMsg(decodeURIComponent(error.replace(/\+/g, ' ')));
+        return;
+      }
+
+      const accessToken = params.get('access_token');
+      const recoveryType = params.get('type');
+      if (accessToken && recoveryType === 'recovery') {
+        setToken(accessToken);
+        setStep('reset');
+      }
+    }
+  }, [searchParams]);
+
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
   /**
-   * Manipula a submissão do formulário de recuperação de senha.
-   * Realiza a requisição na API para o disparo de e-mail.
-   * 
-   * @param {React.FormEvent} e - O evento de submissão do formulário.
+   * Solicita o envio do código de recuperação.
    */
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleRequestReset = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setErrorMsg('');
     setSuccessMsg('');
 
     try {
-      const response = await api.post('/api/v1/auth/forgot-password', {
+      await api.post('/api/v1/auth/forgot-password', {
         email,
+        redirectTo: window.location.origin + '/esqueceu-senha',
       });
 
-      setSuccessMsg('Link de recuperação enviado para seu e-mail!');
-      setEmail('');
+      setSuccessMsg('Código ou link de recuperação enviado para seu e-mail!');
+      setStep('reset');
     } catch (error: any) {
       if (error.response?.status === 404) {
         setErrorMsg('E-mail não encontrado no sistema.');
-      } else if (error.response?.status === 400) {
-        setErrorMsg('Por favor, insira um e-mail válido.');
       } else {
-        setErrorMsg('Ocorreu um erro ao enviar o link. Tente novamente mais tarde.');
+        setErrorMsg('Erro ao enviar o código. Verifique o e-mail e tente novamente.');
       }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * Realiza a redefinição da senha.
+   */
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (newPassword !== confirmPassword) {
+      setErrorMsg('As senhas não coincidem.');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setErrorMsg('A senha deve ter pelo menos 6 caracteres.');
+      return;
+    }
+
+    setLoading(true);
+    setErrorMsg('');
+    setSuccessMsg('');
+
+    try {
+      await api.post('/api/v1/auth/reset-password', {
+        email: email || undefined,
+        token,
+        new_password: newPassword,
+      });
+
+      setSuccessMsg('Senha redefinida com sucesso!');
+      // Redirecionar para login após 2 segundos
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 2000);
+    } catch (error: any) {
+      setErrorMsg(error.response?.data?.detail || 'Erro ao redefinir senha. O código pode estar expirado.');
     } finally {
       setLoading(false);
     }
@@ -63,9 +137,13 @@ export default function ForgotPasswordCard() {
         />
       </div>
 
-      <h2 className={styles.title}>Perdeu o caminho?</h2>
+      <h2 className={styles.title}>
+        {step === 'email' ? 'Perdeu o caminho?' : 'Nova Senha'}
+      </h2>
       <p className={styles.subtitle}>
-        Não se preocupe! O Pontuará ajudará você a recuperar o seu acesso.
+        {step === 'email' 
+          ? 'Não se preocupe! O Pontuará ajudará você a recuperar o seu acesso.' 
+          : 'Insira o código enviado para seu e-mail e sua nova senha.'}
       </p>
 
       {errorMsg && (
@@ -80,32 +158,104 @@ export default function ForgotPasswordCard() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className={styles.form}>
-        <div className={styles.inputGroup}>
-          <label htmlFor="email" className={styles.label}>EMAIL</label>
-          <div className={styles.inputWrapper}>
-            <span className={styles.inputIcon}>@</span>
-            <input
-              type="email"
-              id="email"
-              className={styles.input}
-              placeholder="pontuara.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              disabled={loading || !!successMsg}
-            />
+      {step === 'email' ? (
+        <form onSubmit={handleRequestReset} className={styles.form}>
+          <div className={styles.inputGroup}>
+            <label htmlFor="email" className={styles.label}>EMAIL</label>
+            <div className={styles.inputWrapper}>
+              <span className={styles.inputIcon}>@</span>
+              <input
+                type="email"
+                id="email"
+                className={styles.input}
+                placeholder="exemplo@pontuara.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                disabled={loading}
+              />
+            </div>
           </div>
-        </div>
 
-        <button
-          type="submit"
-          className={styles.submitBtn}
-          disabled={loading || !!successMsg}
-        >
-          {loading ? 'Enviando...' : 'Recuperar Senha'}
-        </button>
-      </form>
+          <button
+            type="submit"
+            className={styles.submitBtn}
+            disabled={loading}
+          >
+            {loading ? 'Enviando...' : 'Enviar Código'}
+          </button>
+        </form>
+      ) : (
+        <form onSubmit={handleResetPassword} className={styles.form}>
+          <div className={styles.inputGroup}>
+            <label htmlFor="token" className={styles.label}>CÓDIGO / TOKEN</label>
+            <div className={styles.inputWrapper}>
+              <span className={styles.inputIcon}>#</span>
+              <input
+                type="text"
+                id="token"
+                className={styles.input}
+                placeholder="Insira o código"
+                value={token}
+                onChange={(e) => setToken(e.target.value)}
+                required
+                disabled={loading || !!successMsg && successMsg.includes('sucesso')}
+              />
+            </div>
+          </div>
+
+          <div className={styles.inputGroup}>
+            <label htmlFor="newPassword" className={styles.label}>NOVA SENHA</label>
+            <div className={styles.inputWrapper}>
+              <span className={styles.inputIcon}>*</span>
+              <input
+                type="password"
+                id="newPassword"
+                className={styles.input}
+                placeholder="******"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                required
+                disabled={loading || !!successMsg && successMsg.includes('sucesso')}
+              />
+            </div>
+          </div>
+
+          <div className={styles.inputGroup}>
+            <label htmlFor="confirmPassword" className={styles.label}>CONFIRMAR SENHA</label>
+            <div className={styles.inputWrapper}>
+              <span className={styles.inputIcon}>*</span>
+              <input
+                type="password"
+                id="confirmPassword"
+                className={styles.input}
+                placeholder="******"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                disabled={loading || !!successMsg && successMsg.includes('sucesso')}
+              />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            className={styles.submitBtn}
+            disabled={loading || !!successMsg && successMsg.includes('sucesso')}
+          >
+            {loading ? 'Redefinindo...' : 'Alterar Senha'}
+          </button>
+
+          <button
+            type="button"
+            className={styles.backButton}
+            onClick={() => setStep('email')}
+            disabled={loading}
+          >
+            Voltar para E-mail
+          </button>
+        </form>
+      )}
 
       <div className={styles.footer}>
         <Link href="/" className={styles.backLink}>

@@ -23,7 +23,9 @@ export default function EsqueceuSenhaPage() {
       
         </div>
         <div className={styles.container}>
-          <ForgotPasswordCard />
+          <React.Suspense fallback={<div>Carregando...</div>}>
+            <ForgotPasswordCard />
+          </React.Suspense>
         </div>
       </main>
       <Footer />
