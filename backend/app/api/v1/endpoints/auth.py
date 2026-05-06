@@ -21,6 +21,15 @@ class SignupPayload(BaseModel):
     telefone: str | None = None
     password: str = Field(min_length=6, max_length=255)
     tipo_usuario: str = Field(pattern="^(funcionario|empregador)$")
+    
+class ForgotPasswordPayload(BaseModel):
+    email: EmailStr
+    redirectTo: str | None = None
+
+class ResetPasswordPayload(BaseModel):
+    email: str | None = None
+    token: str
+    new_password: str = Field(min_length=6, max_length=255)
 
 @router.post("/login")
 def login(payload: LoginPayload):
@@ -84,3 +93,29 @@ def signup(payload: SignupPayload) -> UsuarioRead:
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Erro ao criar usuário: {str(e)}"
         )
+
+@router.post("/forgot-password")
+def forgot_password(payload: ForgotPasswordPayload):
+    """
+    Solicita a recuperação de senha enviando um e-mail com código/link.
+    """
+    return supabase_service.recover_password(payload.email, payload.redirectTo)
+
+@router.post("/reset-password")
+def reset_password(payload: ResetPasswordPayload):
+    """
+    Redefine a senha do usuário utilizando o código ou token recebido por e-mail.
+    """
+    # 1. Verificar o código OTP e obter uma sessão
+    logger.info(f"Verificando código/token para email: {payload.email}")
+    session = supabase_service.verify_otp(payload.email, payload.token, type="recovery")
+    
+    access_token = session.get("access_token")
+    if not access_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Não foi possível validar o código de recuperação."
+        )
+    
+    # 2. Atualizar a senha no Supabase Auth usando o access_token
+    return supabase_service.update_user_password(access_token, payload.new_password)
