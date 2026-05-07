@@ -3,26 +3,25 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { api } from '@/services/api'; // O seu cliente axios já configurado
+import { useRouter } from 'next/navigation'; // Importação do useRouter adicionada
 import { supabase } from '@/services/supabase';
 import styles from './LoginCard.module.css';
 
 /**
  * Componente de cartão de login da plataforma.
  * Oferece login por e-mail/senha ou integração OAuth com Google.
- * 
- * @returns {JSX.Element} O formulário de login.
+ * * @returns {JSX.Element} O formulário de login.
  */
 export default function LoginCard() {
+  const router = useRouter(); // Inicialização do router
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
   /**
-   * Manipula a submissão do formulário de login tradicional.
-   * 
-   * @param {React.FormEvent} e - O evento de envio do formulário.
+   * Manipula a submissão do formulário de login tradicional via Supabase.
+   * * @param {React.FormEvent} e - O evento de envio do formulário.
    */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,25 +29,21 @@ export default function LoginCard() {
     setErrorMsg('');
 
     try {
-      const response = await api.post('/api/v1/auth/login', {
+      // Utiliza o Supabase para o login com e-mail e senha
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      console.log("Resposta do servidor:", response.data); // Verifique o console do navegador (F12)
+      if (error) {
+        setErrorMsg('E-mail ou senha incorretos.');
+        setLoading(false);
+        return;
+      }
 
-      // O FastAPI costuma retornar os dados direto ou dentro de um campo 'user'
-      const token = response.data.access_token;
-      const user = response.data.user || response.data; // Tenta pegar o user ou o objeto raiz
-
-      if (token && user) {
-        localStorage.setItem('access_token', token);
-        localStorage.setItem('user', JSON.stringify(user));
-        
-        // Pequeno delay para garantir que o storage foi gravado antes do redirect
-        setTimeout(() => {
-          router.push('/funcionario');
-        }, 100);
+      if (data.session) {
+        // Redireciona para o painel se a sessão for criada com sucesso
+        router.push('/funcionario');
       } else {
         setErrorMsg('Erro: Dados de sessão não recebidos.');
       }
@@ -60,6 +55,7 @@ export default function LoginCard() {
       setLoading(false);
     }
   };
+
   /**
    * Inicia o fluxo de login OAuth através do Google (Supabase).
    */
@@ -80,7 +76,7 @@ export default function LoginCard() {
     });
 
     if (error) {
-      setErrorMsg('Nao foi possivel iniciar o login com Google.');
+      setErrorMsg('Não foi possível iniciar o login com Google.');
       setLoading(false);
     }
   };
@@ -150,7 +146,7 @@ export default function LoginCard() {
         </Link>
         <span className={styles.divider}>•</span>
         <span className={styles.noAccount}>
-          Não possui email? <Link href="/cadastro" className={styles.signupLink}>Cadastre-se</Link>
+          Não possui conta? <Link href="/cadastro" className={styles.signupLink}>Cadastre-se</Link>
         </span>
       </div>
     </div>
