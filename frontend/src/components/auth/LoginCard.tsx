@@ -3,26 +3,25 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { api } from '@/services/api'; // O seu cliente axios já configurado
+import { useRouter } from 'next/navigation'; // Importação do useRouter adicionada
 import { supabase } from '@/services/supabase';
 import styles from './LoginCard.module.css';
 
 /**
  * Componente de cartão de login da plataforma.
  * Oferece login por e-mail/senha ou integração OAuth com Google.
- * 
- * @returns {JSX.Element} O formulário de login.
+ * * @returns {JSX.Element} O formulário de login.
  */
 export default function LoginCard() {
+  const router = useRouter(); // Inicialização do router
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
   /**
-   * Manipula a submissão do formulário de login tradicional.
-   * 
-   * @param {React.FormEvent} e - O evento de envio do formulário.
+   * Manipula a submissão do formulário de login tradicional via Supabase.
+   * * @param {React.FormEvent} e - O evento de envio do formulário.
    */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,25 +29,28 @@ export default function LoginCard() {
     setErrorMsg('');
 
     try {
-      // Fazemos o POST para o nosso próprio backend (FastAPI)
-      const response = await api.post('/api/v1/auth/login', {
+      // Utiliza o Supabase para o login com e-mail e senha
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
-      
-      console.log('Sessão retornada do backend:', response.data);
-      
-      // Aqui pode guardar o token (localStorage ou cookies)
-      // localStorage.setItem('token', response.data.access_token);
-      
-      alert('Login efetuado com sucesso!');
-      
-    } catch (error: any) {
-      if (error.response && error.response.status === 401) {
+
+      if (error) {
         setErrorMsg('E-mail ou senha incorretos.');
-      } else {
-        setErrorMsg('Ocorreu um erro no servidor. Tente novamente mais tarde.');
+        setLoading(false);
+        return;
       }
+
+      if (data.session) {
+        // Redireciona para o painel se a sessão for criada com sucesso
+        router.push('/funcionario');
+      } else {
+        setErrorMsg('Erro: Dados de sessão não recebidos.');
+      }
+
+    } catch (error: any) {
+      console.error("Erro no login:", error);
+      setErrorMsg('Falha na autenticação. Verifique suas credenciais.');
     } finally {
       setLoading(false);
     }
@@ -74,7 +76,7 @@ export default function LoginCard() {
     });
 
     if (error) {
-      setErrorMsg('Nao foi possivel iniciar o login com Google.');
+      setErrorMsg('Não foi possível iniciar o login com Google.');
       setLoading(false);
     }
   };
@@ -144,7 +146,7 @@ export default function LoginCard() {
         </Link>
         <span className={styles.divider}>•</span>
         <span className={styles.noAccount}>
-          Não possui email? <Link href="/cadastro" className={styles.signupLink}>Cadastre-se</Link>
+          Não possui conta? <Link href="/cadastro" className={styles.signupLink}>Cadastre-se</Link>
         </span>
       </div>
     </div>

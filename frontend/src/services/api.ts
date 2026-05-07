@@ -1,8 +1,7 @@
 import axios from 'axios';
 
-// Default to 8000 since FastAPI typically runs there
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-console.log('Utilizando API URL:', API_URL);
+// Utiliza a porta 7000 conforme definido no docker-compose
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:7000';
 
 export const api = axios.create({
   baseURL: API_URL,
@@ -11,13 +10,15 @@ export const api = axios.create({
   },
 });
 
-// Request interceptor to attach tokens if needed
+// Interceptor para adicionar o Bearer Token do Supabase automaticamente nas requisições
 api.interceptors.request.use(
   (config) => {
-    // const token = localStorage.getItem('token');
-    // if (token && config.headers) {
-    //   config.headers.Authorization = `Bearer ${token}`;
-    // }
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('access_token');
+      if (token && config.headers) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    }
     return config;
   },
   (error) => {
