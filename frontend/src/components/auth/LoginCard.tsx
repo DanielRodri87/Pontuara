@@ -30,30 +30,36 @@ export default function LoginCard() {
     setErrorMsg('');
 
     try {
-      // Fazemos o POST para o nosso próprio backend (FastAPI)
       const response = await api.post('/api/v1/auth/login', {
         email,
         password,
       });
-      
-      console.log('Sessão retornada do backend:', response.data);
-      
-      // Aqui pode guardar o token (localStorage ou cookies)
-      // localStorage.setItem('token', response.data.access_token);
-      
-      alert('Login efetuado com sucesso!');
-      
-    } catch (error: any) {
-      if (error.response && error.response.status === 401) {
-        setErrorMsg('E-mail ou senha incorretos.');
+
+      console.log("Resposta do servidor:", response.data); // Verifique o console do navegador (F12)
+
+      // O FastAPI costuma retornar os dados direto ou dentro de um campo 'user'
+      const token = response.data.access_token;
+      const user = response.data.user || response.data; // Tenta pegar o user ou o objeto raiz
+
+      if (token && user) {
+        localStorage.setItem('access_token', token);
+        localStorage.setItem('user', JSON.stringify(user));
+        
+        // Pequeno delay para garantir que o storage foi gravado antes do redirect
+        setTimeout(() => {
+          router.push('/funcionario');
+        }, 100);
       } else {
-        setErrorMsg('Ocorreu um erro no servidor. Tente novamente mais tarde.');
+        setErrorMsg('Erro: Dados de sessão não recebidos.');
       }
+
+    } catch (error: any) {
+      console.error("Erro no login:", error);
+      setErrorMsg('Falha na autenticação. Verifique suas credenciais.');
     } finally {
       setLoading(false);
     }
   };
-
   /**
    * Inicia o fluxo de login OAuth através do Google (Supabase).
    */
