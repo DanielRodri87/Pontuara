@@ -19,6 +19,15 @@
   top: 0;
   bottom: 0;
   left: 0;
+  transition: width 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), padding 0.4s ease;
+  z-index: 100;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.sidebar.collapsed {
+  width: 88px;
+  padding: 32px 16px;
 }
 
 .brand {
@@ -46,6 +55,26 @@
   font-size: 14px;
   cursor: pointer;
   box-shadow: 0 4px 12px rgba(58, 122, 254, 0.2);
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.2s ease, padding 0.4s ease;
+  white-space: nowrap;
+}
+
+.collapsed .navItem {
+  padding: 12px;
+  justify-content: center;
+}
+
+.navItem span {
+  transition: opacity 0.3s ease;
+}
+
+.collapsed .navItem span {
+  display: none;
+}
+
+.navItem:hover {
+  transform: scale(1.03) translateY(-2px);
+  background-color: #2563EB;
 }
 
 .sidebarBottom {
@@ -64,15 +93,24 @@
 }
 
 .avatar {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  object-fit: cover;
+  object-fit: contain;
+  padding: 4px;
+  flex-shrink: 0;
+  border: 2px solid #E7E8E9;
+  background-color: #F3F4F5;
 }
 
 .profileInfo {
   display: flex;
   flex-direction: column;
+  transition: opacity 0.3s ease;
+}
+
+.collapsed .profileInfo {
+  display: none;
 }
 
 .name {
@@ -97,7 +135,16 @@
   gap: 8px;
   cursor: pointer;
   padding-left: 8px;
-  transition: color 0.2s;
+  transition: color 0.2s, padding 0.4s ease;
+}
+
+.collapsed .logoutBtn {
+  padding-left: 0;
+  justify-content: center;
+}
+
+.collapsed .logoutBtn span {
+  display: none;
 }
 
 .logoutBtn:hover {
@@ -110,13 +157,18 @@
   flex: 1;
   padding: 40px 60px;
   position: relative;
+  transition: margin-left 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.main.sidebarCollapsed {
+  margin-left: 88px;
 }
 
 .exportBtn {
   position: absolute;
   top: 40px;
   right: 60px;
-  background-color: #3A7AFE;
+  background-color: #2A2A2A;
   color: #FFFFFF;
   border: none;
   padding: 10px 16px;
@@ -127,7 +179,16 @@
   align-items: center;
   gap: 8px;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(58, 122, 254, 0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+    background-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.exportBtn:hover {
+  transform: scale(1.03) translateY(-2px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+  background-color: #1a1a1a;
 }
 
 /* Top Widgets (Control & Tracker) */
@@ -176,10 +237,30 @@
 }
 
 .btnEncerrar {
+  background-color: #E67E22;
+  color: #FFFFFF;
+  border: none;
+  padding: 18px 24px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.2s ease;
+}
+
+.btnEncerrar:hover {
+  transform: scale(1.03) translateY(-2px);
+  background-color: #2563EB;
+}
+
+.btnIniciar {
   background-color: #3A7AFE;
   color: #FFFFFF;
   border: none;
-  padding: 14px 20px;
+  padding: 18px 24px;
   border-radius: 12px;
   font-weight: 700;
   font-size: 14px;
@@ -187,13 +268,19 @@
   align-items: center;
   gap: 8px;
   cursor: pointer;
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.2s ease;
+}
+
+.btnIniciar:hover {
+  transform: scale(1.03) translateY(-2px);
+  background-color: #2563EB;
 }
 
 .btnIntervalo {
-  background-color: #F3F4F5;
+  background-color: #EAECEF;
   color: #191c1d;
   border: none;
-  padding: 14px 20px;
+  padding: 18px 24px;
   border-radius: 12px;
   font-weight: 700;
   font-size: 14px;
@@ -201,16 +288,27 @@
   align-items: center;
   gap: 8px;
   cursor: pointer;
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.2s ease;
+}
+
+.btnIntervalo:hover {
+  transform: scale(1.03) translateY(-2px);
+  background-color: #E7E8E9;
 }
 
 .tracker {
-  background-color: #342E29;
+  background-color: #2A2A2A;
   border-radius: 20px;
   padding: 32px;
   color: #FFFFFF;
   display: flex;
   flex-direction: column;
   justify-content: center;
+  transition: transform 0.3s ease;
+}
+
+.tracker:hover {
+  transform: translateY(-5px);
 }
 
 .tracker h3 {
@@ -255,7 +353,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 32px;
 }
 
 .sectionTitle {
@@ -266,7 +364,7 @@
 }
 
 .btnNovoTrabalho {
-  background-color: #342E29;
+  background-color: #2A2A2A;
   color: #FFFFFF;
   border: none;
   padding: 10px 16px;
@@ -277,6 +375,12 @@
   align-items: center;
   gap: 8px;
   cursor: pointer;
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.2s ease;
+}
+
+.btnNovoTrabalho:hover {
+  transform: scale(1.03) translateY(-2px);
+  background-color: #1a1a1a;
 }
 
 .workList {
@@ -369,11 +473,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.2s;
+  transition: all 0.2s;
 }
 
 .iconBtn:hover {
   color: #191c1d;
+  transform: scale(1.15);
 }
 
 .iconBtn.delete:hover {
@@ -507,11 +612,12 @@
   align-items: center;
   justify-content: center;
   padding: 4px;
-  transition: color 0.2s;
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .closeBtn:hover {
   color: #191c1d;
+  transform: scale(1.2);
 }
 
 /* Formulário do Modal */
@@ -591,11 +697,12 @@
   justify-content: center;
   cursor: pointer;
   color: #6b7280;
-  transition: all 0.2s;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .typeBtn:hover {
   background-color: #F3F4F5;
+  transform: scale(1.1) translateY(-2px);
 }
 
 .typeBtn.active {
@@ -616,11 +723,15 @@
   font-weight: 800;
   cursor: pointer;
   margin-top: 12px;
-  transition: background-color 0.2s, transform 0.1s;
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+    background-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .modalActionBtn:hover {
   background-color: #2563EB;
+  transform: scale(1.02) translateY(-2px);
+  box-shadow: 0 8px 16px rgba(58, 122, 254, 0.2);
 }
 
 .modalActionBtn:active {
@@ -676,9 +787,10 @@
   font-weight: 800;
   cursor: pointer;
   margin-top: 12px;
-  transition: background-color 0.2s;
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.2s ease;
 }
 
 .cancelBtn:hover {
   background-color: #E7E8E9;
+  transform: scale(1.02) translateY(-2px);
 }

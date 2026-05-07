@@ -7,24 +7,51 @@ import local from './funcionario.module.css';
 import { supabase } from '@/services/supabase';
 
 // Tipagens conforme o banco de dados e backend
+/**
+ * Representa um registro de trabalho associado a um usuário.
+ * @interface Trabalho
+ */
 interface Trabalho {
+  /** ID único do trabalho no banco de dados. */
   id: string;
+  /** ID do empregador ou funcionário dono deste registro. */
   empregador_id: string;
+  /** Título principal do trabalho realizado. */
   titulo: string;
+  /** Nome do projeto (opcional). */
   projeto?: string;
+  /** Categoria visual (ícone) do trabalho (ex: 'pencil', 'people', 'clipboard'). */
   categoria?: string;
-  descricao?: string; // Usaremos para armazenar a "Duração"
+  /** Utilizado para armazenar a duração em formato de string. */
+  descricao?: string;
+  /** Data e hora de criação do registro no banco. */
   criado_em: string;
 }
 
+/**
+ * Representa um registro de ponto (expediente) de um funcionário.
+ * @interface Expediente
+ */
 interface Expediente {
+  /** ID único do expediente no banco de dados. */
   id: string;
+  /** ID do funcionário que registrou o ponto. */
   funcionario_id: string;
+  /** Data e hora em que o expediente foi iniciado. */
   data_hora_inicio: string;
+  /** Data e hora em que o expediente foi encerrado (pode ser nulo se estiver em andamento). */
   data_hora_fim: string | null;
 }
 
+/**
+ * Componente principal da Dashboard do Funcionário.
+ * Gerencia a exibição e controle do ponto (tracker ao vivo),
+ * sumário semanal de horas e o CRUD de registros de trabalho.
+ * 
+ * @returns {JSX.Element} A interface da tela de funcionário.
+ */
 export default function FuncionarioDashboard() {
+
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -47,6 +74,7 @@ export default function FuncionarioDashboard() {
   const [expedientes, setExpedientes] = useState<Expediente[]>([]);
   const [activeExpediente, setActiveExpediente] = useState<Expediente | null>(null);
   const [currentTimeSpan, setCurrentTimeSpan] = useState<string>('00:00:00');
+  const [sidebarExpanded, setSidebarExpanded] = useState(true);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -109,6 +137,10 @@ export default function FuncionarioDashboard() {
     return () => clearInterval(interval);
   }, [activeExpediente]);
 
+  /**
+   * Busca e filtra todos os trabalhos associados ao ID do usuário atual.
+   * @param {string} userId O ID único do usuário autenticado.
+   */
   const fetchTrabalhos = async (userId: string) => {
     try {
       const { data } = await api.get('/api/v1/trabalhos/');
@@ -118,6 +150,11 @@ export default function FuncionarioDashboard() {
     }
   };
 
+  /**
+   * Busca a lista de expedientes (pontos) do funcionário.
+   * Define o estado de expedientes e identifica se há algum em andamento.
+   * @param {string} userId O ID único do usuário autenticado.
+   */
   const fetchExpedientes = async (userId: string) => {
     try {
       const { data } = await api.get('/api/v1/expedientes/');
@@ -131,6 +168,11 @@ export default function FuncionarioDashboard() {
     }
   };
 
+  /**
+   * Alterna o estado do expediente atual do usuário.
+   * Se já houver um expediente ativo, ele é encerrado gravando 'data_hora_fim'.
+   * Caso contrário, cria um novo expediente gravando 'data_hora_inicio'.
+   */
   const handleToggleExpediente = async () => {
     if (!user) return;
     setLoading(true);
@@ -150,6 +192,11 @@ export default function FuncionarioDashboard() {
     }
   };
 
+  /**
+   * Calcula o sumário semanal (em milissegundos) trabalhado por dia.
+   * Agrupa as horas dos expedientes a partir do domingo até sábado.
+   * @returns {number[]} Array contendo a soma de milissegundos para os dias [Dom, Seg, Ter, Qua, Qui, Sex, Sáb].
+   */
   const calculateWeekSummary = () => {
     const today = new Date();
     const sunday = new Date(today);
@@ -170,6 +217,12 @@ export default function FuncionarioDashboard() {
     return weekDaysMs;
   };
 
+  /**
+   * Formata a duração em milissegundos para uma string humanamente legível.
+   * Ex: 2h 30m ou apenas 45m.
+   * @param {number} ms Duração total em milissegundos.
+   * @returns {string} String formatada com horas e minutos.
+   */
   const formatDuration = (ms: number) => {
     if (ms === 0) return '--';
     const hours = Math.floor(ms / (1000 * 60 * 60));
@@ -184,12 +237,32 @@ export default function FuncionarioDashboard() {
   const totalHours = totalMs / (1000 * 60 * 60);
   const progressPercent = Math.min(100, Math.round((totalHours / 40) * 100));
 
+  /**
+   * Formata e retorna o horário do primeiro expediente (entrada) do dia atual.
+   * Procura o expediente mais antigo iniciado hoje para fixar a hora de entrada.
+   * @returns {string} String com o horário de entrada formatado ou '--:--' caso não haja registro.
+   */
   const formatEntryTime = () => {
-    if (!activeExpediente) return '--:--';
-    const start = new Date(activeExpediente.data_hora_inicio);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const todaysExpedientes = expedientes.filter(exp => {
+      const expDate = new Date(exp.data_hora_inicio);
+      return expDate >= today;
+    });
+
+    if (todaysExpedientes.length === 0) return '--:--';
+
+    todaysExpedientes.sort((a, b) => new Date(a.data_hora_inicio).getTime() - new Date(b.data_hora_inicio).getTime());
+    const start = new Date(todaysExpedientes[0].data_hora_inicio);
     return `${start.getHours().toString().padStart(2, '0')}h ${start.getMinutes().toString().padStart(2, '0')}m`;
   };
 
+  /**
+   * Abre o modal e configura os dados do formulário dependendo da ação (novo, editar, deletar).
+   * @param {'new' | 'edit' | 'delete'} type O tipo de modal a ser aberto.
+   * @param {Trabalho} [trabalho] Os dados do trabalho, caso seja uma edição ou exclusão.
+   */
   const openModal = (type: 'new' | 'edit' | 'delete', trabalho?: Trabalho) => {
     if (trabalho) setSelectedTrabalho(trabalho);
     if (type === 'new') setFormData({ titulo: '', projeto: '', duracao: '', categoria: 'clipboard' });
@@ -204,11 +277,18 @@ export default function FuncionarioDashboard() {
     setActiveModal(type);
   };
 
+  /**
+   * Fecha o modal ativo e reseta os estados associados.
+   */
   const closeModal = () => {
     setActiveModal('none');
     setSelectedTrabalho(null);
   };
 
+  /**
+   * Realiza a criação de um novo registro de trabalho.
+   * Utiliza os dados preenchidos no modal e envia via POST para a API.
+   */
   const handleCreateWork = async () => {
     setLoading(true);
     try {
@@ -229,6 +309,10 @@ export default function FuncionarioDashboard() {
     }
   };
 
+  /**
+   * Realiza a atualização de um registro de trabalho existente.
+   * Utiliza o ID do trabalho selecionado e envia os novos dados via PUT para a API.
+   */
   const handleUpdateWork = async () => {
     if (!selectedTrabalho) return;
     setLoading(true);
@@ -249,6 +333,10 @@ export default function FuncionarioDashboard() {
     }
   };
 
+  /**
+   * Deleta o registro de trabalho previamente selecionado.
+   * Envia uma requisição DELETE para a API.
+   */
   const handleDeleteWork = async () => {
     if (!selectedTrabalho) return;
     setLoading(true);
@@ -264,10 +352,18 @@ export default function FuncionarioDashboard() {
     }
   };
 
+  /**
+   * Desloga o usuário atual através da API do Supabase e limpa os dados locais.
+   */
   const handleLogout = async () => {
     await supabase.auth.signOut();
   };
 
+  /**
+   * Retorna o SVG correto dependendo da categoria definida.
+   * @param {string} categoria O tipo/nome da categoria do trabalho.
+   * @returns {JSX.Element} Ícone SVG correspondente.
+   */
   const getCategoryIcon = (categoria: string) => {
     switch (categoria) {
       case 'pencil':
@@ -300,7 +396,10 @@ export default function FuncionarioDashboard() {
       <style>{`@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }`}</style>
 
       {/* Sidebar Lateral */}
-      <aside className={local.sidebar}>
+      <aside 
+        className={`${local.sidebar} ${sidebarExpanded ? '' : local.collapsed}`}
+        onClick={() => setSidebarExpanded(!sidebarExpanded)}
+      >
         <div>
           <div className={local.brand}>
             <img src="/images/Logo.svg" alt="Pontuara Logo" />
@@ -308,7 +407,7 @@ export default function FuncionarioDashboard() {
           <nav>
             <button className={local.navItem}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"></rect><rect x="14" y="3" width="7" height="5" rx="1"></rect><rect x="14" y="12" width="7" height="9" rx="1"></rect><rect x="3" y="16" width="7" height="5" rx="1"></rect></svg>
-              Dashboard
+              <span>Dashboard</span>
             </button>
           </nav>
         </div>
@@ -323,13 +422,13 @@ export default function FuncionarioDashboard() {
           </div>
           <button className={local.logoutBtn} onClick={handleLogout}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-            Logout
+            <span>Logout</span>
           </button>
         </div>
       </aside>
 
       {/* Conteúdo Principal */}
-      <main className={local.main}>
+      <main className={`${local.main} ${sidebarExpanded ? '' : local.sidebarCollapsed}`}>
         <button className={local.exportBtn}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
           Exportar CSV
@@ -344,8 +443,7 @@ export default function FuncionarioDashboard() {
             </div>
             <div className={local.controlActions}>
               <button 
-                className={activeExpediente ? local.btnEncerrar : local.btnIntervalo} 
-                style={!activeExpediente ? { backgroundColor: '#3A7AFE', color: '#FFF' } : {}}
+                className={activeExpediente ? local.btnEncerrar : local.btnIniciar} 
                 onClick={handleToggleExpediente}
                 disabled={loading}
               >
@@ -361,6 +459,16 @@ export default function FuncionarioDashboard() {
                   </>
                 )}
               </button>
+              {activeExpediente && (
+                <button 
+                  className={local.btnIntervalo}
+                  disabled={loading}
+                  onClick={handleToggleExpediente}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+                  Intervalo
+                </button>
+              )}
             </div>
           </div>
 
@@ -371,8 +479,8 @@ export default function FuncionarioDashboard() {
               <div className={local.progressFill} style={{ width: `${progressPercent}%`, transition: 'width 0.5s ease' }}></div>
             </div>
             <div className={local.progressLabels}>
-              <span>Progress</span>
-              <span>{Math.floor(totalHours)}/40 Hours</span>
+              <span>Progresso</span>
+              <span>{Math.floor(totalHours)}/40 Horas</span>
             </div>
           </div>
         </div>
@@ -403,7 +511,7 @@ export default function FuncionarioDashboard() {
                 </div>
                 <div className={local.itemRight}>
                   <div className={local.durationBlock}>
-                    <div className={local.label}>Duration</div>
+                    <div className={local.label}>Duração</div>
                     <div className={local.time}>{trab.descricao || '--'}</div>
                   </div>
                   <div className={local.itemActions}>
@@ -465,11 +573,11 @@ export default function FuncionarioDashboard() {
             </div>
 
             <div className={local.formGroup}>
-              <label className={local.formLabel}>Nome do projeto</label>
+              <label className={local.formLabel}>Descrição</label>
               <input 
                 type="text" 
                 className={local.formInput} 
-                placeholder="Ex: Projeto Pontuará" 
+                placeholder="Ex: Desenvolvimento da Landing Page" 
                 value={formData.projeto}
                 onChange={e => setFormData({...formData, projeto: e.target.value})}
               />
@@ -483,9 +591,8 @@ export default function FuncionarioDashboard() {
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
                   </div>
                   <input 
-                    type="text" 
+                    type="time" 
                     className={`${local.formInput} ${local.pl}`} 
-                    placeholder="Selecione" 
                     value={formData.duracao}
                     onChange={e => setFormData({...formData, duracao: e.target.value})}
                   />
