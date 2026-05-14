@@ -7,43 +7,127 @@ import Sidebar from '@/components/sidebar/Sidebar';
 import { icons } from 'lucide-react';
 import local from './admin.module.css';
 
+// Tipagens conforme o banco de dados e backend
+/**
+ * Representa um projeto de trabalho gerenciado pela administração.
+ * @interface Projeto
+ */
+interface Projeto {
+  /** ID único do projeto no banco de dados. */
+  id: string;
+  /** Título principal do projeto. */
+  titulo: string;
+  /** Descrição detalhada do projeto. */
+  desc: string;
+  /** Ícone visual associado ao projeto. */
+  icon: string;
+}
+
+/**
+ * Representa dados de gráficos com métricas de desempenho.
+ * @interface ChartData
+ */
+interface ChartData {
+  /** Array de valores para horas trabalhadas por dia da semana. */
+  Horas: number[];
+  /** Array de valores para produtividade por dia da semana. */
+  Produtividade: number[];
+  /** Array de valores para duração de intervalos por dia da semana. */
+  Intervalos: number[];
+}
+
+/**
+ * Representa um indivíduo (colaborador) com informações de desempenho.
+ * @interface Individuo
+ */
+interface Individuo {
+  /** ID único do indivíduo. */
+  id: string;
+  /** Nome completo do colaborador. */
+  nome: string;
+  /** Cargo ou posição do colaborador. */
+  role: string;
+  /** Número total de tarefas realizadas. */
+  tarefas: number;
+  /** Horas totais trabalhadas (formato string com unidade). */
+  horas: string;
+  /** URL da imagem de avatar do colaborador. */
+  avatar: string;
+}
+
+/**
+ * Estado do formulário para criar ou editar projetos.
+ * @interface FormData
+ */
+interface FormData {
+  /** Título do projeto. */
+  titulo: string;
+  /** Descrição do projeto. */
+  descricao: string;
+  /** Ícone/badge selecionado para o projeto. */
+  badget: string;
+}
+
 // Mock Data
-const MOCK_PROJECTS = [
+const MOCK_PROJECTS: Projeto[] = [
   { id: '1', titulo: 'Artemis', desc: 'Projeto que envolve aplicação web para o cliente otimizar seus processos', icon: 'Compasso' },
 ];
 
-const MOCK_CHART_DATA = {
+const MOCK_CHART_DATA: ChartData = {
   Horas: [22, 15, 34, 27, 20, 8, 38], // Seg a Dom
   Produtividade: [12, 18, 14, 25, 22, 10, 5],
   Intervalos: [4, 3, 5, 4, 3, 2, 1]
 };
 
-const MOCK_INDIVIDUALS = [
+const MOCK_INDIVIDUALS: Individuo[] = [
   { id: '1', nome: 'Iago Roberto', role: 'Front-end Developer', tarefas: 412, horas: '162h', avatar: '/images/Profile1.png' },
   { id: '2', nome: 'Rita de Cássia', role: 'UX/UI Designer', tarefas: 340, horas: '140h', avatar: '/images/Profile2.png' },
   { id: '3', nome: 'Daniel', role: 'Back-end Developer', tarefas: 280, horas: '150h', avatar: '/images/Profile3.png' }
 ];
 
+/**
+ * Componente principal da Dashboard de Administração.
+ * Gerencia a visualização e controle de projetos, métricas de desempenho,
+ * informações de colaboradores individuais e aprovações pendentes.
+ * Inclui modais para CRUD de projetos e detalhes de colaboradores.
+ * 
+ * @returns {JSX.Element} Dashboard de administração com sidebar e conteúdo principal.
+ */
 export default function AdminDashboard() {
   const router = useRouter();
+  
+  /** Estado do usuário autenticado (dados da sessão do Supabase). */
   const [user, setUser] = useState<any>(null);
+  
+  /** Controla se a sidebar está expandida ou colapsada. */
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
 
-  // Modais
+  /** Estado da modal ativa: 'none' (nenhuma), 'new' (criar projeto), 'edit' (editar projeto), 'delete' (deletar confirmação), 'indivDetails' (detalhes de colaborador). */
   const [activeModal, setActiveModal] = useState<'none' | 'new' | 'edit' | 'delete' | 'indivDetails'>('none');
+  
+  /** Dados do formulário para criar/editar projetos (título, descrição e ícone). */
   const [formData, setFormData] = useState({ titulo: '', descricao: '', badget: 'Compasso' });
 
-  // Icon Picker
+  /** Controla a visibilidade do seletor de ícones. */
   const [iconPickerOpen, setIconPickerOpen] = useState(false);
+  
+  /** Cor selecionada para o ícone no seletor de ícones. */
   const [iconColor, setIconColor] = useState('#3A7AFE');
+  
+  /** Termo de busca para filtrar ícones no seletor. */
   const [iconSearch, setIconSearch] = useState('');
 
-  // Gráfico Geral
+  /** Abas do gráfico geral: 'Horas', 'Produtividade' ou 'Intervalos'. */
   const [chartTab, setChartTab] = useState<'Horas' | 'Produtividade' | 'Intervalos'>('Horas');
 
-  // Perfil Individual
+  /** Índice do colaborador atual exibido no card de perfil individual. */
   const [indivIndex, setIndivIndex] = useState(0);
 
+  /**
+   * Hook de ciclo de vida que verifica a autenticação do usuário ao montar o componente.
+   * Se não houver sessão ativa, redireciona para a página de login.
+   * Recupera os dados do usuário autenticado do Supabase.
+   */
   useEffect(() => {
     const checkUser = async () => {
       try {
@@ -61,11 +145,25 @@ export default function AdminDashboard() {
     checkUser();
   }, [router]);
 
+  /**
+   * Realiza o logout do usuário.
+   * Encerra a sessão no Supabase e redireciona para a página inicial.
+   * @async
+   */
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push('/');
   };
 
+  /**
+   * Abre uma modal específica e, se necessário, popula o formulário com dados existentes.
+   * Para edição, carrega os dados do projeto selecionado.
+   * Para novo projeto, limpa o formulário.
+   * Para outras modais (delete, indivDetails), apenas abre sem necessidade de dados.
+   * 
+   * @param {string} type - Tipo de modal a abrir: 'new', 'edit', 'delete' ou 'indivDetails'.
+   * @param {Projeto} [proj] - Projeto a editar (obrigatório apenas para 'edit').
+   */
   const openModal = (type: 'new' | 'edit' | 'delete' | 'indivDetails', proj?: any) => {
     if (proj && type === 'edit') {
       setFormData({ titulo: proj.titulo, descricao: proj.desc, badget: proj.icon });
@@ -75,6 +173,10 @@ export default function AdminDashboard() {
     setActiveModal(type);
   };
 
+  /**
+   * Fecha a modal ativa e limpa o estado do seletor de ícones.
+   * Reseta `activeModal` para 'none' e fecha o `iconPickerOpen`.
+   */
   const closeModal = () => {
     setActiveModal('none');
     setIconPickerOpen(false);
@@ -82,11 +184,22 @@ export default function AdminDashboard() {
 
   const currentIndiv = MOCK_INDIVIDUALS[indivIndex];
 
-  // Aumentar o máximo do gráfico em 20% e forçar a ser divisível por 5 para ter mais pontos no eixo Y
+  /** Calcula o valor máximo do gráfico com 20% de margem, arredondado para o múltiplo de 5 mais próximo (para melhor distribuição do eixo Y). */
   const maxDataValue = Math.max(...MOCK_CHART_DATA[chartTab]);
   const maxChartValue = Math.ceil((maxDataValue * 1.2) / 5) * 5;
 
-  // Renderiza ícones (Lucide ou Imagens antigas com mask para colorir)
+  /**
+   * Renderiza um ícone do projeto, suportando dois formatos:
+   * 1. Ícones Lucide: formato 'lucide:nomeDaClasse:cor' (ex: 'lucide:home:#3A7AFE')
+   * 2. SVG estático: formato simples 'nomedoarquivo' (sem extensão), carregado de /images/
+   * 
+   * Utiliza CSS mask para colorir SVGs estáticos dinamicamente.
+   * 
+   * @param {string} iconStr - String identificadora do ícone (formato Lucide ou nome do arquivo SVG).
+   * @param {number} [size=24] - Tamanho do ícone em pixels.
+   * @param {boolean} [isProject=false] - Se true, usa cor padrão de projeto (#7e8591), senão usa cor padrão (#3A7AFE).
+   * @returns {JSX.Element|null} Elemento JSX do ícone renderizado ou null se inválido.
+   */
   const renderProjectIcon = (iconStr: string, size = 24, isProject = false) => {
     if (iconStr.startsWith('lucide:')) {
       const parts = iconStr.split(':');

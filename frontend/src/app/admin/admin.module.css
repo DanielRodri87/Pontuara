@@ -1,3 +1,13 @@
+/**
+ * Estilos do módulo AdminDashboard
+ * Define o layout principal da dashboard de administração, incluindo:
+ * - Layout flexbox com sidebar e conteúdo principal
+ * - Grid de cards de estatísticas
+ * - Estilos para lista de projetos
+ * - Componentes de gráficos e cards de desempenho
+ * - Modais para CRUD de projetos
+ */
+
 /* frontend/src/app/admin/admin.module.css */
 .layout {
   display: flex;
