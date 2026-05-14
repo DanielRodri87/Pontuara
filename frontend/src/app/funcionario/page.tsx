@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { api } from '@/services/api';
 import local from './funcionario.module.css';
 import { supabase } from '@/services/supabase';
+import Sidebar from '@/components/sidebar/Sidebar';
 
 // Tipagens conforme o banco de dados e backend
 /**
@@ -395,37 +396,13 @@ export default function FuncionarioDashboard() {
 
       <style>{`@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }`}</style>
 
-      {/* Sidebar Lateral */}
-      <aside 
-        className={`${local.sidebar} ${sidebarExpanded ? '' : local.collapsed}`}
-        onClick={() => setSidebarExpanded(!sidebarExpanded)}
-      >
-        <div>
-          <div className={local.brand}>
-            <img src="/images/Logo.svg" alt="Pontuara Logo" />
-          </div>
-          <nav>
-            <button className={local.navItem}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"></rect><rect x="14" y="3" width="7" height="5" rx="1"></rect><rect x="14" y="12" width="7" height="9" rx="1"></rect><rect x="3" y="16" width="7" height="5" rx="1"></rect></svg>
-              <span>Dashboard</span>
-            </button>
-          </nav>
-        </div>
-
-        <div className={local.sidebarBottom}>
-          <div className={local.profileCard}>
-            <img src={user.user_metadata?.avatar_url || "/images/profile.svg"} alt="avatar" className={local.avatar} />
-            <div className={local.profileInfo}>
-              <span className={local.name}>{user.user_metadata?.nome || user.email.split('@')[0]}</span>
-              <span className={local.role}>{user.user_metadata?.tipo_usuario === 'empregador' ? 'Gestor' : 'Funcionário'}</span>
-            </div>
-          </div>
-          <button className={local.logoutBtn} onClick={handleLogout}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-            <span>Logout</span>
-          </button>
-        </div>
-      </aside>
+      <Sidebar 
+        user={user} 
+        sidebarExpanded={sidebarExpanded} 
+        setSidebarExpanded={setSidebarExpanded} 
+        handleLogout={handleLogout}
+        themeColor="#3A7AFE"
+      />
 
       {/* Conteúdo Principal */}
       <main className={`${local.main} ${sidebarExpanded ? '' : local.sidebarCollapsed}`}>

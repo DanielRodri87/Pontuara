@@ -6,151 +6,6 @@
   font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
-/* Sidebar */
-.sidebar {
-  width: 260px;
-  background-color: #FFFFFF;
-  border-right: 1px solid #E7E8E9;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: 32px 24px;
-  position: fixed;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  transition: width 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), padding 0.4s ease;
-  z-index: 100;
-  cursor: pointer;
-  overflow: hidden;
-}
-
-.sidebar.collapsed {
-  width: 88px;
-  padding: 32px 16px;
-}
-
-.brand {
-  display: flex;
-  align-items: center;
-  margin-bottom: 40px;
-}
-
-.brand img {
-  width: 40px;
-  height: 40px;
-}
-
-.navItem {
-  background-color: #3A7AFE;
-  color: #FFFFFF;
-  border: none;
-  padding: 12px 16px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  font-weight: 700;
-  font-size: 14px;
-  cursor: pointer;
-  box-shadow: 0 4px 12px rgba(58, 122, 254, 0.2);
-  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.2s ease, padding 0.4s ease;
-  white-space: nowrap;
-}
-
-.collapsed .navItem {
-  padding: 12px;
-  justify-content: center;
-}
-
-.navItem span {
-  transition: opacity 0.3s ease;
-}
-
-.collapsed .navItem span {
-  display: none;
-}
-
-.navItem:hover {
-  transform: scale(1.03) translateY(-2px);
-  background-color: #2563EB;
-}
-
-.sidebarBottom {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.profileCard {
-  background-color: #F3F4F5;
-  border-radius: 999px;
-  padding: 8px 16px 8px 8px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  object-fit: contain;
-  padding: 4px;
-  flex-shrink: 0;
-  border: 2px solid #E7E8E9;
-  background-color: #F3F4F5;
-}
-
-.profileInfo {
-  display: flex;
-  flex-direction: column;
-  transition: opacity 0.3s ease;
-}
-
-.collapsed .profileInfo {
-  display: none;
-}
-
-.name {
-  font-weight: 800;
-  font-size: 13px;
-  color: #191c1d;
-}
-
-.role {
-  font-size: 11px;
-  color: #6b7280;
-}
-
-.logoutBtn {
-  background: none;
-  border: none;
-  color: #6b7280;
-  font-weight: 600;
-  font-size: 13px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  padding-left: 8px;
-  transition: color 0.2s, padding 0.4s ease;
-}
-
-.collapsed .logoutBtn {
-  padding-left: 0;
-  justify-content: center;
-}
-
-.collapsed .logoutBtn span {
-  display: none;
-}
-
-.logoutBtn:hover {
-  color: #ef4444;
-}
-
 /* Main Content */
 .main {
   margin-left: 260px;
@@ -237,7 +92,7 @@
 }
 
 .btnEncerrar {
-  background-color: #E67E22;
+  background-color: #3A7AFE;
   color: #FFFFFF;
   border: none;
   padding: 18px 24px;
@@ -585,8 +440,15 @@
 }
 
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .modalHeader {
