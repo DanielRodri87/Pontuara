@@ -15,19 +15,67 @@ interface Projeto {
   idempresa?: string | null;
 }
 
-// Os indicadores abaixo ainda usam mock porque a tabela `expedientes` foi removida
-// e o schema atual não traz uma nova fonte para horas, intervalos ou produtividade.
-const MOCK_CHART_DATA = {
-  Horas: [22, 15, 34, 27, 20, 8, 38], // Seg a Dom
-  Produtividade: [12, 18, 14, 25, 22, 10, 5],
-  Intervalos: [4, 3, 5, 4, 3, 2, 1]
-};
+interface Usuario {
+  id: string;
+  nome: string;
+  sobrenome: string;
+  email: string;
+  tipo_usuario: 'funcionario' | 'empregador';
+  idempresa?: string | null;
+  pendente?: boolean;
+  criado_em: string;
+}
 
-// Mock mantido porque ainda não há endpoint/tabela de perfis detalhados de colaboradores.
-const MOCK_INDIVIDUALS = [
-  { id: '1', nome: 'Iago Roberto', role: 'Front-end Developer', tarefas: 412, horas: '162h', avatar: '/images/Profile1.png' },
-  { id: '2', nome: 'Rita de Cássia', role: 'UX/UI Designer', tarefas: 340, horas: '140h', avatar: '/images/Profile2.png' },
-  { id: '3', nome: 'Daniel', role: 'Back-end Developer', tarefas: 280, horas: '150h', avatar: '/images/Profile3.png' }
+interface Trabalho {
+  id: string;
+  empregador_id: string;
+  titulo: string;
+  descricao?: string | null;
+  categoria?: string | null;
+  idprojeto?: string | null;
+  duracao?: string | null;
+  criado_em: string;
+}
+
+interface IndividualData {
+  usuario: Usuario;
+  trabalhos: Trabalho[];
+  tarefas: number;
+  horasMs: number;
+}
+
+const PROJECT_COLORS = ['#2563EB', '#14B8A6', '#F97316', '#8B5CF6', '#EC4899', '#22C55E', '#0EA5E9', '#F59E0B'];
+const BADGET_OPTIONS = [
+  { value: '1', icon: 'Compasso', label: 'Compasso' },
+  { value: '2', icon: 'Raio', label: 'Raio' },
+  { value: '3', icon: 'Modelos', label: 'Modelos' },
+  { value: '4', icon: 'Seguro', label: 'Seguro' },
+  { value: '5', icon: 'ativos', label: 'Ativos' },
+  { value: '6', icon: 'horastotais', label: 'Horas' },
+  { value: '7', icon: 'pendenteslista', label: 'Pendentes' },
+  { value: '8', icon: 'tarefasraio', label: 'Tarefas' },
+  { value: '9', icon: 'tempograficos', label: 'Tempo' },
+  { value: '10', icon: 'horasind', label: 'Individual' },
+  { value: '11', icon: 'check', label: 'Check' },
+  { value: '12', icon: 'camera', label: 'Camera' },
+  { value: '13', icon: 'profile', label: 'Perfil' },
+  { value: '14', icon: 'copy', label: 'Copia' },
+  { value: '15', icon: 'setacad', label: 'Seta' },
+  { value: '16', icon: 'back', label: 'Voltar' },
+  { value: '17', icon: 'aceitar', label: 'Aceitar' },
+  { value: '18', icon: 'recusar', label: 'Recusar' },
+  { value: '19', icon: 'Google', label: 'Google' },
+  { value: '20', icon: 'Logo', label: 'Logo' },
+];
+const BADGET_COLORS = [
+  { value: '1', color: '#2563EB', label: 'Azul' },
+  { value: '2', color: '#14B8A6', label: 'Verde agua' },
+  { value: '3', color: '#F97316', label: 'Laranja' },
+  { value: '4', color: '#8B5CF6', label: 'Violeta' },
+  { value: '5', color: '#EC4899', label: 'Rosa' },
+  { value: '6', color: '#22C55E', label: 'Verde' },
+  { value: '7', color: '#0F172A', label: 'Grafite' },
+  { value: '8', color: '#F59E0B', label: 'Amarelo' },
 ];
 
 export default function AdminDashboard() {
@@ -37,27 +85,48 @@ export default function AdminDashboard() {
 
   // Modais
   const [activeModal, setActiveModal] = useState<'none' | 'new' | 'edit' | 'delete' | 'indivDetails'>('none');
-  const [formData, setFormData] = useState({ titulo: '', descricao: '', badgets: '' });
+  const [formData, setFormData] = useState({ titulo: '', descricao: '', badgets: BADGET_OPTIONS[0].value, badgetColor: BADGET_COLORS[0].value });
   const [projetos, setProjetos] = useState<Projeto[]>([]);
+  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
+  const [trabalhos, setTrabalhos] = useState<Trabalho[]>([]);
   const [selectedProjeto, setSelectedProjeto] = useState<Projeto | null>(null);
   const [loading, setLoading] = useState(false);
 
   // Gráfico Geral
-  const [chartTab, setChartTab] = useState<'Horas' | 'Produtividade' | 'Intervalos'>('Horas');
+  const [chartTab, setChartTab] = useState<'Horas' | 'Produtividade'>('Horas');
 
   // Perfil Individual
   const [indivIndex, setIndivIndex] = useState(0);
 
   useEffect(() => {
+    setIndivIndex(0);
+  }, [usuarios.length]);
+
+  useEffect(() => {
     const checkUser = async () => {
       try {
+        if (!supabase) {
+          router.push('/');
+          return;
+        }
+
         const { data: { session }, error } = await supabase.auth.getSession();
         if (error || !session) {
           router.push('/');
           return;
         }
-        setUser(session.user);
-        fetchProjetos();
+
+        const { data: usuarios } = await api.get('/api/v1/usuarios/');
+        const usuario = usuarios.find((item: any) => item.id === session.user.id || item.email === session.user.email);
+        const appUser = { ...session.user, perfil: usuario, idempresa: usuario?.idempresa };
+
+        if (usuario?.tipo_usuario !== 'empregador') {
+          router.push('/funcionario');
+          return;
+        }
+
+        setUser(appUser);
+        await fetchDashboardData(usuario?.idempresa);
       } catch (err) {
         console.error(err);
         router.push('/');
@@ -67,17 +136,19 @@ export default function AdminDashboard() {
   }, [router]);
 
   const handleLogout = async () => {
+    if (!supabase) return;
     await supabase.auth.signOut();
     router.push('/');
   };
 
   const openModal = (type: 'new' | 'edit' | 'delete' | 'indivDetails', proj?: any) => {
     if (proj && type === 'edit') {
+      const badget = getProjetoBadget(proj.badgets);
       setSelectedProjeto(proj);
-      setFormData({ titulo: proj.titulo, descricao: proj.descricao || '', badgets: String(proj.badgets ?? '') });
+      setFormData({ titulo: proj.titulo, descricao: proj.descricao || '', badgets: badget.value, badgetColor: badget.colorValue });
     } else if (type === 'new') {
       setSelectedProjeto(null);
-      setFormData({ titulo: '', descricao: '', badgets: '' });
+      setFormData({ titulo: '', descricao: '', badgets: BADGET_OPTIONS[0].value, badgetColor: BADGET_COLORS[0].value });
     } else if (proj && type === 'delete') {
       setSelectedProjeto(proj);
     }
@@ -89,12 +160,38 @@ export default function AdminDashboard() {
     setSelectedProjeto(null);
   };
 
-  const fetchProjetos = async () => {
+  const getProjetoBadget = (badgets?: string | number | null) => {
+    const numericBadget = Number(badgets);
+    const badgeValue = numericBadget >= 100 ? String(Math.floor(numericBadget / 100)) : String(numericBadget || BADGET_OPTIONS[0].value);
+    const colorValue = numericBadget >= 100 ? String(numericBadget % 100) : BADGET_COLORS[0].value;
+    const option = BADGET_OPTIONS.find((item) => item.value === badgeValue) || BADGET_OPTIONS[0];
+    const color = BADGET_COLORS.find((item) => item.value === colorValue) || BADGET_COLORS[0];
+
+    return { ...option, color: color.color, colorValue: color.value };
+  };
+
+  const encodeBadget = () => {
+    return Number(formData.badgets) * 100 + Number(formData.badgetColor);
+  };
+
+  const fetchDashboardData = async (idempresa?: string | null) => {
     try {
-      const { data } = await api.get('/api/v1/projetos/');
-      setProjetos(data);
+      const [{ data: projetosData }, { data: usuariosData }, { data: trabalhosData }] = await Promise.all([
+        api.get('/api/v1/projetos/'),
+        api.get('/api/v1/usuarios/'),
+        api.get('/api/v1/trabalhos/'),
+      ]);
+
+      const usuariosEmpresa = idempresa ? usuariosData.filter((usuario: Usuario) => usuario.idempresa === idempresa) : [];
+      const projetosEmpresa = idempresa ? projetosData.filter((projeto: Projeto) => projeto.idempresa === idempresa) : [];
+      const usuarioIds = new Set(usuariosEmpresa.map((usuario: Usuario) => usuario.id));
+      const trabalhosEmpresa = trabalhosData.filter((trabalho: Trabalho) => usuarioIds.has(trabalho.empregador_id));
+
+      setUsuarios(usuariosEmpresa);
+      setProjetos(projetosEmpresa);
+      setTrabalhos(trabalhosEmpresa);
     } catch (error) {
-      console.error('Erro ao buscar projetos', error);
+      console.error('Erro ao buscar dados do dashboard', error);
     }
   };
 
@@ -104,9 +201,10 @@ export default function AdminDashboard() {
       await api.post('/api/v1/projetos/', {
         titulo: formData.titulo,
         descricao: formData.descricao || undefined,
-        badgets: formData.badgets ? Number(formData.badgets) : undefined,
+        badgets: encodeBadget(),
+        idempresa: user?.idempresa || undefined,
       });
-      await fetchProjetos();
+      await fetchDashboardData(user?.idempresa);
       closeModal();
     } catch (error) {
       console.error('Erro ao criar projeto', error);
@@ -122,9 +220,10 @@ export default function AdminDashboard() {
       await api.put(`/api/v1/projetos/${selectedProjeto.id}`, {
         titulo: formData.titulo,
         descricao: formData.descricao || null,
-        badgets: formData.badgets ? Number(formData.badgets) : null,
+        badgets: encodeBadget(),
+        idempresa: selectedProjeto.idempresa || user?.idempresa || null,
       });
-      await fetchProjetos();
+      await fetchDashboardData(user?.idempresa);
       closeModal();
     } catch (error) {
       console.error('Erro ao editar projeto', error);
@@ -138,7 +237,7 @@ export default function AdminDashboard() {
     setLoading(true);
     try {
       await api.delete(`/api/v1/projetos/${selectedProjeto.id}`);
-      await fetchProjetos();
+      await fetchDashboardData(user?.idempresa);
       closeModal();
     } catch (error) {
       console.error('Erro ao deletar projeto', error);
@@ -147,14 +246,138 @@ export default function AdminDashboard() {
     }
   };
 
-  const currentIndiv = MOCK_INDIVIDUALS[indivIndex];
+  const handleApproveUsuario = async (usuarioId: string) => {
+    setLoading(true);
+    try {
+      await api.put(`/api/v1/usuarios/${usuarioId}`, { pendente: false });
+      await fetchDashboardData(user?.idempresa);
+    } catch (error) {
+      console.error('Erro ao aprovar usuário', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  // Aumentar o máximo do gráfico em 20% e forçar a ser divisível por 5 para ter mais pontos no eixo Y
-  const maxDataValue = Math.max(...MOCK_CHART_DATA[chartTab]);
-  const maxChartValue = Math.ceil((maxDataValue * 1.2) / 5) * 5;
+  const handleRejectUsuario = async (usuarioId: string) => {
+    setLoading(true);
+    try {
+      await api.delete(`/api/v1/usuarios/${usuarioId}`);
+      await fetchDashboardData(user?.idempresa);
+    } catch (error) {
+      console.error('Erro ao recusar usuário', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const parseIntervalToMs = (value?: string | null) => {
+    if (!value) return 0;
+
+    const dayMatch = value.match(/(\d+)\s+day/);
+    const days = dayMatch ? Number(dayMatch[1]) : 0;
+    const timeMatch = value.match(/(\d{1,3}):(\d{2})(?::(\d{2}))?/);
+    if (!timeMatch) return 0;
+
+    const hours = Number(timeMatch[1]);
+    const minutes = Number(timeMatch[2]);
+    const seconds = Number(timeMatch[3] || 0);
+
+    return (((days * 24 + hours) * 60 + minutes) * 60 + seconds) * 1000;
+  };
+
+  const formatDuration = (ms: number) => {
+    if (!ms) return '--';
+    const hours = Math.floor(ms / (1000 * 60 * 60));
+    const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
+    if (hours === 0) return `${minutes}m`;
+    if (minutes === 0) return `${hours}h`;
+    return `${hours}h ${minutes.toString().padStart(2, '0')}m`;
+  };
+
+  const formatDurationShort = (ms: number) => {
+    const hours = ms / (1000 * 60 * 60);
+    return `${hours.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}h`;
+  };
+
+  const getWeekDates = () => {
+    const today = new Date();
+    const mondayOffset = today.getDay() === 0 ? -6 : 1 - today.getDay();
+    const weekStart = new Date(today);
+    weekStart.setHours(0, 0, 0, 0);
+    weekStart.setDate(today.getDate() + mondayOffset);
+
+    return Array.from({ length: 7 }, (_, index) => {
+      const date = new Date(weekStart);
+      date.setDate(weekStart.getDate() + index);
+      return date;
+    });
+  };
+
+  const isSameDay = (firstDate: Date, secondDate: Date) => {
+    return firstDate.getFullYear() === secondDate.getFullYear()
+      && firstDate.getMonth() === secondDate.getMonth()
+      && firstDate.getDate() === secondDate.getDate();
+  };
+
+  const isSameMonth = (date: Date, reference: Date) => {
+    return date.getFullYear() === reference.getFullYear() && date.getMonth() === reference.getMonth();
+  };
+
+  const funcionarios = usuarios.filter((usuario) => usuario.tipo_usuario === 'funcionario');
+  const funcionariosAtivos = funcionarios.filter((usuario) => !usuario.pendente);
+  const funcionariosPendentes = funcionarios.filter((usuario) => usuario.pendente);
+  const totalTrabalhosMs = trabalhos.reduce((total, trabalho) => total + parseIntervalToMs(trabalho.duracao), 0);
+  const trabalhosMes = trabalhos.filter((trabalho) => isSameMonth(new Date(trabalho.criado_em), new Date()));
+  const totalMensalMs = trabalhosMes.reduce((total, trabalho) => total + parseIntervalToMs(trabalho.duracao), 0);
+  const tempoMedioTrabalhoMs = trabalhos.length ? totalTrabalhosMs / trabalhos.length : 0;
+
+  const weekDates = getWeekDates();
+  const horasPorDia = weekDates.map((date) => {
+    const totalMs = trabalhos.reduce((total, trabalho) => {
+      const trabalhoDate = new Date(trabalho.criado_em);
+      if (!isSameDay(trabalhoDate, date)) return total;
+      return total + parseIntervalToMs(trabalho.duracao);
+    }, 0);
+
+    return {
+      label: date.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '').toUpperCase(),
+      value: totalMs / (1000 * 60 * 60),
+      color: '#2563EB',
+    };
+  });
+
+  const horasPorProjeto = projetos.map((projeto, index) => {
+    const totalMs = trabalhos.reduce((total, trabalho) => {
+      if (trabalho.idprojeto !== projeto.id) return total;
+      return total + parseIntervalToMs(trabalho.duracao);
+    }, 0);
+
+    return {
+      label: projeto.titulo,
+      value: totalMs / (1000 * 60 * 60),
+      color: PROJECT_COLORS[index % PROJECT_COLORS.length],
+    };
+  }).filter((item) => item.value > 0);
+
+  const chartData = chartTab === 'Horas' ? horasPorDia : horasPorProjeto;
+  const maxDataValue = Math.max(...chartData.map((item) => item.value), 1);
+  const maxChartValue = Math.ceil((maxDataValue * 1.2) / 5) * 5 || 5;
+
+  const individualData: IndividualData[] = funcionariosAtivos.map((usuario) => {
+    const trabalhosUsuario = trabalhos.filter((trabalho) => trabalho.empregador_id === usuario.id);
+    const horasMs = trabalhosUsuario.reduce((total, trabalho) => total + parseIntervalToMs(trabalho.duracao), 0);
+
+    return {
+      usuario,
+      trabalhos: trabalhosUsuario,
+      tarefas: trabalhosUsuario.length,
+      horasMs,
+    };
+  });
+  const currentIndiv = individualData[indivIndex] || null;
 
   // Renderiza ícones a partir dos SVGs existentes em public/images.
-  const renderProjectIcon = (iconStr: string, size = 24, isProject = false) => {
+  const renderProjectIcon = (iconStr: string, size = 24, isProject = false, color?: string) => {
     return (
       <div
         className={local.svgMask}
@@ -163,7 +386,7 @@ export default function AdminDashboard() {
           WebkitMask: `url(/images/${iconStr}.svg) no-repeat center / contain`,
           width: size,
           height: size,
-          backgroundColor: isProject ? '#7e8591' : '#3A7AFE'
+          backgroundColor: color || (isProject ? '#7e8591' : '#3A7AFE')
         }}
       />
     );
@@ -191,7 +414,7 @@ export default function AdminDashboard() {
               </div>
             </div>
             <div className={local.cardTitle}>Colaboradores Ativos</div>
-            <div className={local.cardValue}>1,284</div>
+            <div className={local.cardValue}>{funcionariosAtivos.length}</div>
           </div>
 
           <div className={local.statCard}>
@@ -201,17 +424,17 @@ export default function AdminDashboard() {
               </div>
             </div>
             <div className={local.cardTitle}>Horas Mensais Totais</div>
-            <div className={local.cardValue}>20.4k</div>
+            <div className={local.cardValue}>{formatDurationShort(totalMensalMs)}</div>
           </div>
 
           <div className={local.statCard}>
             <div className={local.cardHeader}>
               <div className={local.cardIcon}>
-                {renderProjectIcon('cafebreak', 18)}
+                {renderProjectIcon('tarefasraio', 18)}
               </div>
             </div>
-            <div className={local.cardTitle}>Tempo Médio de Intervalo</div>
-            <div className={local.cardValue}>52m</div>
+            <div className={local.cardTitle}>Tempo Médio de Trabalhos Cadastrados</div>
+            <div className={local.cardValue}>{formatDuration(tempoMedioTrabalhoMs)}</div>
           </div>
 
           <div className={local.statCard}>
@@ -221,7 +444,7 @@ export default function AdminDashboard() {
               </div>
             </div>
             <div className={local.cardTitle}>Aprovações Pendentes</div>
-            <div className={local.cardValue}>27</div>
+            <div className={local.cardValue}>{funcionariosPendentes.length}</div>
           </div>
         </div>
 
@@ -241,7 +464,7 @@ export default function AdminDashboard() {
             <div key={proj.id} className={local.projectItem}>
               <div className={local.projectLeft}>
                 <div className={local.projectIcon}>
-                  {renderProjectIcon('Compasso', 20, true)}
+                  {renderProjectIcon(getProjetoBadget(proj.badgets).icon, 20, true, getProjetoBadget(proj.badgets).color)}
                 </div>
                 <div className={local.projectInfo}>
                   <div className={local.title}>{proj.titulo}</div>
@@ -268,7 +491,11 @@ export default function AdminDashboard() {
               <h3>Geral</h3>
               <div className={local.dateNav}>
                 <button><img src="/images/tempograficos.svg" alt="Prev" /></button>
-                <span>12 Out - 18 Out, 2023</span>
+                <span>
+                  {weekDates[0].toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
+                  {' - '}
+                  {weekDates[6].toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
+                </span>
                 <button><img src="/images/tempograficos.svg" alt="Next" style={{ transform: 'scaleX(-1)' }} /></button>
               </div>
             </div>
@@ -276,7 +503,7 @@ export default function AdminDashboard() {
             <div className={local.geralControls}>
               <span className={local.subtitle}>Comportamento geral</span>
               <div className={local.chartTabs}>
-                {(['Horas', 'Produtividade', 'Intervalos'] as const).map(tab => (
+                {(['Horas', 'Produtividade'] as const).map(tab => (
                   <button
                     key={tab}
                     className={`${local.tabBtn} ${chartTab === tab ? local.active : ''}`}
@@ -306,13 +533,15 @@ export default function AdminDashboard() {
                 <div className={local.gridLine}></div>
               </div>
 
-              {['SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB', 'DOM'].map((day, idx) => {
-                const val = MOCK_CHART_DATA[chartTab][idx];
+              {chartData.length === 0 ? (
+                <div className={local.emptyChart}>Nenhuma hora cadastrada para exibir.</div>
+              ) : chartData.map((item) => {
+                const val = item.value;
                 const heightPercent = (val / maxChartValue) * 100;
                 return (
-                  <div key={day} className={local.chartBarWrapper}>
-                    <div className={local.chartBar} style={{ height: `${heightPercent}%` }}></div>
-                    <span className={local.chartLabel}>{day}</span>
+                  <div key={item.label} className={local.chartBarWrapper}>
+                    <div className={local.chartBar} style={{ height: `${heightPercent}%`, backgroundColor: item.color }} title={`${item.label}: ${val.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}h`}></div>
+                    <span className={local.chartLabel}>{item.label}</span>
                   </div>
                 );
               })}
@@ -328,47 +557,53 @@ export default function AdminDashboard() {
           <div className={local.indivCard}>
             <h3>Individual</h3>
 
-            <div className={local.indivProfile}>
-              <div className={local.indivAvatarWrapper}>
-                <img src={currentIndiv.avatar} alt="Avatar" className={local.indivAvatar} />
-              </div>
-              <div className={local.indivName}>{currentIndiv.nome}</div>
-              <div className={local.indivRole}>{currentIndiv.role}</div>
-            </div>
-
-            <div className={local.indivNav}>
-              <button
-                className={local.navArrow}
-                onClick={() => setIndivIndex(prev => prev > 0 ? prev - 1 : MOCK_INDIVIDUALS.length - 1)}
-              >
-                <img src="/images/tempograficos.svg" alt="Prev" />
-              </button>
-              <button
-                className={local.navArrow}
-                onClick={() => setIndivIndex(prev => prev < MOCK_INDIVIDUALS.length - 1 ? prev + 1 : 0)}
-              >
-                <img src="/images/tempograficos.svg" alt="Next" style={{ transform: 'scaleX(-1)' }} />
-              </button>
-            </div>
-
-            <div className={local.indivStats}>
-              <div className={local.statRow}>
-                <div className={local.statLabel}>
-                  {renderProjectIcon('tarefasraio', 20)}
-                  Tarefas
+            {currentIndiv ? (
+              <>
+                <div className={local.indivProfile}>
+                  <div className={local.indivAvatarWrapper}>
+                    <img src="/images/profile.svg" alt="Avatar" className={local.indivAvatar} />
+                  </div>
+                  <div className={local.indivName}>{currentIndiv.usuario.nome} {currentIndiv.usuario.sobrenome}</div>
+                  <div className={local.indivRole}>{currentIndiv.usuario.email}</div>
                 </div>
-                <div className={local.statVal}>{currentIndiv.tarefas}</div>
-              </div>
-              <div className={local.statRow}>
-                <div className={local.statLabel}>
-                  {renderProjectIcon('horasind', 20)}
-                  Horas Logadas
-                </div>
-                <div className={local.statVal}>{currentIndiv.horas}</div>
-              </div>
-            </div>
 
-            <button className={local.btnVisualizar} onClick={() => openModal('indivDetails')}>Visualizar mais</button>
+                <div className={local.indivNav}>
+                  <button
+                    className={local.navArrow}
+                    onClick={() => setIndivIndex(prev => prev > 0 ? prev - 1 : Math.max(individualData.length - 1, 0))}
+                  >
+                    <img src="/images/tempograficos.svg" alt="Prev" />
+                  </button>
+                  <button
+                    className={local.navArrow}
+                    onClick={() => setIndivIndex(prev => prev < individualData.length - 1 ? prev + 1 : 0)}
+                  >
+                    <img src="/images/tempograficos.svg" alt="Next" style={{ transform: 'scaleX(-1)' }} />
+                  </button>
+                </div>
+
+                <div className={local.indivStats}>
+                  <div className={local.statRow}>
+                    <div className={local.statLabel}>
+                      {renderProjectIcon('tarefasraio', 20)}
+                      Trabalhos
+                    </div>
+                    <div className={local.statVal}>{currentIndiv.tarefas}</div>
+                  </div>
+                  <div className={local.statRow}>
+                    <div className={local.statLabel}>
+                      {renderProjectIcon('horasind', 20)}
+                      Horas Trabalhadas
+                    </div>
+                    <div className={local.statVal}>{formatDuration(currentIndiv.horasMs)}</div>
+                  </div>
+                </div>
+
+                <button className={local.btnVisualizar} onClick={() => openModal('indivDetails')}>Visualizar mais</button>
+              </>
+            ) : (
+              <p style={{ color: '#6b7280', fontSize: '14px', textAlign: 'center' }}>Nenhum funcionário disponível.</p>
+            )}
           </div>
         </div>
 
@@ -384,42 +619,30 @@ export default function AdminDashboard() {
               </tr>
             </thead>
             <tbody>
-              <tr>
-                <td>
-                  <div className={local.colabCell}>
-                    <img src="/images/Profile2.png" alt="Rita" className={local.colabAvatar} />
-                    <div className={local.colabInfo}>
-                      <span className={local.name}>Rita de Cássia</span>
-                      <span className={local.email}>rita@pontuara.com</span>
+              {funcionariosPendentes.length === 0 ? (
+                <tr>
+                  <td colSpan={3} style={{ color: '#6b7280', textAlign: 'center' }}>Nenhuma aprovação pendente.</td>
+                </tr>
+              ) : funcionariosPendentes.map((funcionario) => (
+                <tr key={funcionario.id}>
+                  <td>
+                    <div className={local.colabCell}>
+                      <img src="/images/profile.svg" alt={funcionario.nome} className={local.colabAvatar} />
+                      <div className={local.colabInfo}>
+                        <span className={local.name}>{funcionario.nome} {funcionario.sobrenome}</span>
+                        <span className={local.email}>{funcionario.email}</span>
+                      </div>
                     </div>
-                  </div>
-                </td>
-                <td>12 Out, 2023</td>
-                <td>
-                  <div className={local.actionBtns}>
-                    <button className={local.actionBtn}><img src="/images/aceitar.svg" alt="Aceitar" /></button>
-                    <button className={local.actionBtn}><img src="/images/recusar.svg" alt="Recusar" /></button>
-                  </div>
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  <div className={local.colabCell}>
-                    <img src="/images/Profile3.png" alt="Daniel" className={local.colabAvatar} />
-                    <div className={local.colabInfo}>
-                      <span className={local.name}>Daniel</span>
-                      <span className={local.email}>daniel@pontuara.com</span>
+                  </td>
+                  <td>{new Date(funcionario.criado_em).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                  <td>
+                    <div className={local.actionBtns}>
+                      <button className={local.actionBtn} onClick={() => handleApproveUsuario(funcionario.id)} disabled={loading}><img src="/images/aceitar.svg" alt="Aceitar" /></button>
+                      <button className={local.actionBtn} onClick={() => handleRejectUsuario(funcionario.id)} disabled={loading}><img src="/images/recusar.svg" alt="Recusar" /></button>
                     </div>
-                  </div>
-                </td>
-                <td>13 Out, 2023</td>
-                <td>
-                  <div className={local.actionBtns}>
-                    <button className={local.actionBtn}><img src="/images/aceitar.svg" alt="Aceitar" /></button>
-                    <button className={local.actionBtn}><img src="/images/recusar.svg" alt="Recusar" /></button>
-                  </div>
-                </td>
-              </tr>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
@@ -461,15 +684,31 @@ export default function AdminDashboard() {
 
             <div className={local.formGroup}>
               <label className={local.formLabel}>Badgets</label>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                className={local.formInput}
-                placeholder="Ex: 1200"
-                value={formData.badgets}
-                onChange={e => setFormData({ ...formData, badgets: e.target.value })}
-              />
+              <div className={local.badgetGrid}>
+                {BADGET_OPTIONS.map((badget) => (
+                  <button
+                    key={badget.value}
+                    type="button"
+                    title={badget.label}
+                    className={`${local.badgetBtn} ${formData.badgets === badget.value ? local.active : ''}`}
+                    onClick={() => setFormData({ ...formData, badgets: badget.value })}
+                  >
+                    {renderProjectIcon(badget.icon, 18, true, BADGET_COLORS.find((color) => color.value === formData.badgetColor)?.color)}
+                  </button>
+                ))}
+              </div>
+              <div className={local.badgetColorRow}>
+                {BADGET_COLORS.map((color) => (
+                  <button
+                    key={color.value}
+                    type="button"
+                    title={color.label}
+                    className={`${local.colorDot} ${formData.badgetColor === color.value ? local.active : ''}`}
+                    style={{ backgroundColor: color.color }}
+                    onClick={() => setFormData({ ...formData, badgetColor: color.value })}
+                  />
+                ))}
+              </div>
             </div>
 
             <button
@@ -505,7 +744,7 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {activeModal === 'indivDetails' && (
+      {activeModal === 'indivDetails' && currentIndiv && (
         <div className={local.modalOverlay} onClick={closeModal}>
           <div className={local.indivModalContent} onClick={e => e.stopPropagation()}>
             <button className={local.closeBtn} onClick={closeModal}>
@@ -513,44 +752,51 @@ export default function AdminDashboard() {
             </button>
 
             <div className={local.indivAvatarWrapper}>
-              <img src={currentIndiv.avatar} alt="Avatar" className={local.indivAvatar} />
+              <img src="/images/profile.svg" alt="Avatar" className={local.indivAvatar} />
             </div>
-            <div className={local.indivName}>{currentIndiv.nome}</div>
-            <div className={local.indivRole} style={{ marginBottom: 24 }}>{currentIndiv.role}</div>
+            <div className={local.indivName}>{currentIndiv.usuario.nome} {currentIndiv.usuario.sobrenome}</div>
+            <div className={local.indivRole} style={{ marginBottom: 24 }}>{currentIndiv.usuario.email}</div>
 
             <div className={local.indivStats}>
               <div className={local.statRow}>
                 <div className={local.statLabel}>
                   {renderProjectIcon('tarefasraio', 20)}
-                  Tarefas
+                  Trabalhos
                 </div>
                 <div className={local.statVal}>{currentIndiv.tarefas}</div>
               </div>
               <div className={local.statRow}>
                 <div className={local.statLabel}>
                   {renderProjectIcon('horasind', 20)}
-                  Horas Logadas
+                  Horas Trabalhadas
                 </div>
-                <div className={local.statVal}>{currentIndiv.horas}</div>
+                <div className={local.statVal}>{formatDuration(currentIndiv.horasMs)}</div>
               </div>
             </div>
 
-            <div className={local.workListTitle}>Trabalhos no dia</div>
+            <div className={local.workListTitle}>Trabalhos cadastrados</div>
             <div className={local.workListModal}>
-              {projetos.map(proj => (
-                <div key={proj.id} className={local.projectItem} style={{ padding: '12px 16px' }}>
+              {currentIndiv.trabalhos.length === 0 ? (
+                <p style={{ color: '#6b7280', fontSize: '13px' }}>Nenhum trabalho cadastrado.</p>
+              ) : currentIndiv.trabalhos.map(trabalho => {
+                const projeto = projetos.find((proj) => proj.id === trabalho.idprojeto);
+
+                return (
+                <div key={trabalho.id} className={local.projectItem} style={{ padding: '12px 16px' }}>
                   <div className={local.projectLeft}>
                     <div className={local.projectIcon} style={{ width: 32, height: 32 }}>
-                      {renderProjectIcon('Compasso', 16, true)}
+                      {renderProjectIcon(getProjetoBadget(projeto?.badgets).icon, 16, true, getProjetoBadget(projeto?.badgets).color)}
                     </div>
                     <div className={local.projectInfo}>
-                      <div className={local.title}>{proj.titulo}</div>
-                      {/* Horas por projeto dependiam dos expedientes, que não existem mais no schema atual. */}
-                      <div className={local.desc} style={{ fontSize: 10 }}>2h 30m trabalhados</div>
+                      <div className={local.title}>{trabalho.titulo}</div>
+                      <div className={local.desc} style={{ fontSize: 10 }}>
+                        {projeto?.titulo || 'Sem projeto'} - {formatDuration(parseIntervalToMs(trabalho.duracao))}
+                      </div>
                     </div>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
 
             <button className={local.btnExportar} style={{ marginTop: 'auto' }}>

@@ -38,6 +38,17 @@ interface Projeto {
   idempresa?: string | null;
 }
 
+interface UsuarioPerfil {
+  id: string;
+  nome: string;
+  sobrenome: string;
+  email: string;
+  telefone?: string | null;
+  tipo_usuario: 'funcionario' | 'empregador';
+  idempresa?: string | null;
+  pendente?: boolean;
+}
+
 /**
  * Componente principal da Dashboard do Funcionário.
  * Gerencia a exibição e controle do ponto (tracker ao vivo),
@@ -66,15 +77,23 @@ export default function FuncionarioDashboard() {
   const [selectedTrabalho, setSelectedTrabalho] = useState<Trabalho | null>(null);
   const [formData, setFormData] = useState({ titulo: '', descricao: '', idprojeto: '', duracao: '', categoria: 'clipboard' });
 
-  // A tabela `expedientes` foi removida do Supabase e ainda não existe uma tabela substituta
-  // para registrar ponto. O tracker fica desativado para evitar chamadas a endpoints removidos.
-  const currentTimeSpan = '00:00:00';
+  const [timerStartedAt, setTimerStartedAt] = useState<number | null>(null);
+  const [elapsedMs, setElapsedMs] = useState(0);
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
+  const [needsCompanySetup, setNeedsCompanySetup] = useState(false);
+  const [pendingProfile, setPendingProfile] = useState<UsuarioPerfil | null>(null);
+  const [companyCode, setCompanyCode] = useState('');
 
   useEffect(() => {
+    if (!supabase) {
+      router.push('/');
+      return;
+    }
+    const supabaseClient = supabase;
+
     const checkUser = async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
+        const { data: { session }, error } = await supabaseClient.auth.getSession();
 
         if (error || !session) {
           router.push('/');
@@ -85,8 +104,25 @@ export default function FuncionarioDashboard() {
         localStorage.setItem('access_token', session.access_token);
         localStorage.setItem('user', JSON.stringify(currentUser));
 
-        setUser(currentUser);
-        fetchProjetos();
+        const { data: usuarios } = await api.get('/api/v1/usuarios/');
+        const usuario = usuarios.find((item: any) => item.id === currentUser.id || item.email === currentUser.email);
+        const appUser = { ...currentUser, perfil: usuario, idempresa: usuario?.idempresa };
+
+        if (usuario?.tipo_usuario === 'empregador') {
+          router.push('/admin');
+          return;
+        }
+
+        setUser(appUser);
+        setPendingProfile(usuario || null);
+
+        if (!usuario?.idempresa) {
+          setNeedsCompanySetup(true);
+          return;
+        }
+
+        setNeedsCompanySetup(false);
+        fetchProjetos(usuario?.idempresa);
         fetchTrabalhos(currentUser.id);
 
       } catch (err) {
@@ -97,7 +133,7 @@ export default function FuncionarioDashboard() {
 
     checkUser();
 
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: authListener } = supabaseClient.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT' || !session) {
         localStorage.removeItem('access_token');
         localStorage.removeItem('user');
@@ -109,6 +145,16 @@ export default function FuncionarioDashboard() {
       authListener.subscription.unsubscribe();
     };
   }, [router]);
+
+  useEffect(() => {
+    if (!timerStartedAt) return;
+
+    const intervalId = window.setInterval(() => {
+      setElapsedMs(Date.now() - timerStartedAt);
+    }, 1000);
+
+    return () => window.clearInterval(intervalId);
+  }, [timerStartedAt]);
 
   /**
    * Busca e filtra todos os trabalhos associados ao ID do usuário atual.
@@ -123,25 +169,162 @@ export default function FuncionarioDashboard() {
     }
   };
 
-  const fetchProjetos = async () => {
+  const fetchProjetos = async (idempresa?: string | null) => {
     try {
       const { data } = await api.get('/api/v1/projetos/');
-      setProjetos(data);
+      setProjetos(idempresa ? data.filter((projeto: Projeto) => projeto.idempresa === idempresa) : []);
     } catch (error) {
       console.error('Erro ao buscar projetos', error);
     }
   };
 
-  const handleUnavailableTimeTracking = () => {
-    showPopup('Controle de ponto indisponível: a tabela Expediente foi removida.', 'error');
+  const getGoogleProfileNames = () => {
+    const metadata = user?.user_metadata || {};
+    const fullName = String(metadata.full_name || metadata.name || user?.email?.split('@')[0] || 'Usuário').trim();
+    const nameParts = fullName.split(' ').filter(Boolean);
+
+    return {
+      nome: String(metadata.given_name || nameParts[0] || 'Usuário'),
+      sobrenome: String(metadata.family_name || nameParts.slice(1).join(' ') || 'Google'),
+    };
   };
 
-  /**
-   * Retorna o sumário zerado enquanto não houver uma nova tabela para substituir `expedientes`.
-   * @returns {number[]} Array contendo a soma de milissegundos para os dias [Dom, Seg, Ter, Qua, Qui, Sex, Sáb].
-   */
+  const handleCompleteCompanySetup = async () => {
+    if (!user) return;
+    const normalizedCode = companyCode.trim();
+
+    if (!normalizedCode) {
+      showPopup('Informe o código da empresa.', 'error');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { data: empresas } = await api.get('/api/v1/empresas/');
+      const empresa = empresas.find((item: any) => item.codigoempresa === normalizedCode);
+
+      if (!empresa) {
+        showPopup('Código da empresa não encontrado.', 'error');
+        return;
+      }
+
+      const names = getGoogleProfileNames();
+      const payload = {
+        nome: pendingProfile?.nome || names.nome,
+        sobrenome: pendingProfile?.sobrenome || names.sobrenome,
+        email: pendingProfile?.email || user.email,
+        telefone: pendingProfile?.telefone || undefined,
+        tipo_usuario: pendingProfile?.tipo_usuario || 'funcionario',
+        idempresa: empresa.id,
+        pendente: true,
+      };
+
+      const { data: usuario } = pendingProfile
+        ? await api.put(`/api/v1/usuarios/${pendingProfile.id}`, payload)
+        : await api.post('/api/v1/usuarios/', { id: user.id, ...payload });
+
+      const appUser = { ...user, perfil: usuario, idempresa: usuario.idempresa };
+      setUser(appUser);
+      setPendingProfile(usuario);
+      setNeedsCompanySetup(false);
+      setCompanyCode('');
+      await fetchProjetos(usuario.idempresa);
+      await fetchTrabalhos(user.id);
+      showPopup('Conta vinculada à empresa com sucesso!', 'success');
+    } catch (error) {
+      console.error('Erro ao vincular conta Google à empresa', error);
+      showPopup('Erro ao vincular conta à empresa.', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const startTimer = () => {
+    setTimerStartedAt(Date.now());
+    setElapsedMs(0);
+  };
+
+  const stopTimer = () => {
+    const finalElapsedMs = timerStartedAt ? Date.now() - timerStartedAt : elapsedMs;
+    setTimerStartedAt(null);
+    setElapsedMs(finalElapsedMs);
+    openModal('new', undefined, formatMsAsTimeValue(finalElapsedMs));
+  };
+
+  const parseIntervalToMs = (value?: string | null) => {
+    if (!value) return 0;
+
+    const dayMatch = value.match(/(\d+)\s+day/);
+    const days = dayMatch ? Number(dayMatch[1]) : 0;
+    const timeMatch = value.match(/(\d{1,3}):(\d{2})(?::(\d{2}))?/);
+    if (!timeMatch) return 0;
+
+    const hours = Number(timeMatch[1]);
+    const minutes = Number(timeMatch[2]);
+    const seconds = Number(timeMatch[3] || 0);
+
+    return (((days * 24 + hours) * 60 + minutes) * 60 + seconds) * 1000;
+  };
+
+  const formatMsAsClock = (ms: number) => {
+    const totalSeconds = Math.floor(ms / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    return [hours, minutes, seconds].map((part) => part.toString().padStart(2, '0')).join(':');
+  };
+
+  const formatMsAsTimeValue = (ms: number) => {
+    return formatMsAsClock(ms);
+  };
+
+  const formatIntervalForInput = (value?: string | null) => {
+    if (!value) return '';
+    const match = value.match(/(\d{1,3}):(\d{2})(?::(\d{2}))?/);
+    if (!match) return '';
+
+    const hours = Number(match[1]).toString().padStart(2, '0');
+    const minutes = match[2];
+    const seconds = match[3] || '00';
+
+    return `${hours}:${minutes}:${seconds}`;
+  };
+
+  const formatIntervalForDisplay = (value?: string | null) => {
+    const inputValue = formatIntervalForInput(value);
+    return inputValue ? inputValue.slice(0, 5) : '--';
+  };
+
+  const getWeekDates = () => {
+    const today = new Date();
+    const weekStart = new Date(today);
+    weekStart.setHours(0, 0, 0, 0);
+    weekStart.setDate(today.getDate() - today.getDay());
+
+    return Array.from({ length: 7 }, (_, index) => {
+      const date = new Date(weekStart);
+      date.setDate(weekStart.getDate() + index);
+      return date;
+    });
+  };
+
+  const isSameDay = (firstDate: Date, secondDate: Date) => {
+    return firstDate.getFullYear() === secondDate.getFullYear()
+      && firstDate.getMonth() === secondDate.getMonth()
+      && firstDate.getDate() === secondDate.getDate();
+  };
+
   const calculateWeekSummary = () => {
-    return [0, 0, 0, 0, 0, 0, 0];
+    const weekDates = getWeekDates();
+
+    return weekDates.map((date) => {
+      return trabalhos.reduce((total, trabalho) => {
+        const trabalhoDate = new Date(trabalho.criado_em);
+        if (!isSameDay(trabalhoDate, date)) return total;
+        return total + parseIntervalToMs(trabalho.duracao);
+      }, 0);
+    });
   };
 
   /**
@@ -159,17 +342,20 @@ export default function FuncionarioDashboard() {
     return `${hours}h ${minutes.toString().padStart(2, '0')}m`;
   };
 
+  const weekDates = getWeekDates();
   const weekData = calculateWeekSummary();
   const totalMs = weekData.reduce((acc, curr) => acc + curr, 0);
   const totalHours = totalMs / (1000 * 60 * 60);
   const progressPercent = Math.min(100, Math.round((totalHours / 40) * 100));
+  const currentTimeSpan = formatMsAsClock(elapsedMs);
 
   /**
    * Retorna placeholder enquanto o registro de expediente não existir no schema atual.
    * @returns {string} String com o horário de entrada formatado ou '--:--' caso não haja registro.
    */
   const formatEntryTime = () => {
-    return '--:--';
+    if (!timerStartedAt) return '--:--';
+    return new Date(timerStartedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   };
 
   const getProjetoTitulo = (idprojeto?: string | null) => {
@@ -187,15 +373,15 @@ export default function FuncionarioDashboard() {
    * @param {'new' | 'edit' | 'delete'} type O tipo de modal a ser aberto.
    * @param {Trabalho} [trabalho] Os dados do trabalho, caso seja uma edição ou exclusão.
    */
-  const openModal = (type: 'new' | 'edit' | 'delete', trabalho?: Trabalho) => {
+  const openModal = (type: 'new' | 'edit' | 'delete', trabalho?: Trabalho, duracaoInicial = '') => {
     if (trabalho) setSelectedTrabalho(trabalho);
-    if (type === 'new') setFormData({ titulo: '', descricao: '', idprojeto: '', duracao: '', categoria: 'clipboard' });
+    if (type === 'new') setFormData({ titulo: '', descricao: '', idprojeto: '', duracao: duracaoInicial, categoria: 'clipboard' });
     if (type === 'edit' && trabalho) {
       setFormData({ 
         titulo: trabalho.titulo, 
         descricao: trabalho.descricao || '',
         idprojeto: trabalho.idprojeto || '',
-        duracao: trabalho.duracao?.slice(0, 5) || '',
+        duracao: formatIntervalForInput(trabalho.duracao),
         categoria: trabalho.categoria || 'clipboard', 
       });
     }
@@ -283,6 +469,7 @@ export default function FuncionarioDashboard() {
    * Desloga o usuário atual através da API do Supabase e limpa os dados locais.
    */
   const handleLogout = async () => {
+    if (!supabase) return;
     await supabase.auth.signOut();
   };
 
@@ -345,14 +532,25 @@ export default function FuncionarioDashboard() {
               <div className={local.subtitle}>Entrou hoje às: {formatEntryTime()}</div>
             </div>
             <div className={local.controlActions}>
-              <button 
-                className={local.btnIniciar}
-                onClick={handleUnavailableTimeTracking}
-                disabled={loading}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                Ponto indisponível
-              </button>
+              {timerStartedAt ? (
+                <button
+                  className={local.btnEncerrar}
+                  onClick={stopTimer}
+                  disabled={loading}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"></rect></svg>
+                  Encerrar
+                </button>
+              ) : (
+                <button
+                  className={local.btnIniciar}
+                  onClick={startTimer}
+                  disabled={loading}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                  Iniciar
+                </button>
+              )}
             </div>
           </div>
 
@@ -396,7 +594,7 @@ export default function FuncionarioDashboard() {
                 <div className={local.itemRight}>
                   <div className={local.durationBlock}>
                     <div className={local.label}>Duração</div>
-                    <div className={local.time}>{trab.duracao?.slice(0, 5) || '--'}</div>
+                    <div className={local.time}>{formatIntervalForDisplay(trab.duracao)}</div>
                   </div>
                   <div className={local.itemActions}>
                     <button className={local.iconBtn} onClick={() => openModal('edit', trab)}>
@@ -422,7 +620,7 @@ export default function FuncionarioDashboard() {
           <div className={local.weekGrid}>
             {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((day, idx) => (
               <div key={day} className={`${local.dayCard} ${new Date().getDay() === idx ? local.active : ''}`}>
-                <span className={local.dayLabel}>{day}</span>
+                <span className={local.dayLabel}>{day} {weekDates[idx].toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</span>
                 <span className={local.dayValue}>{formatDuration(weekData[idx])}</span>
               </div>
             ))}
@@ -475,7 +673,9 @@ export default function FuncionarioDashboard() {
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
                   </div>
                   <input 
-                    type="time" 
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="HH:MM:SS"
                     className={`${local.formInput} ${local.pl}`} 
                     value={formData.duracao}
                     onChange={e => setFormData({...formData, duracao: e.target.value})}
@@ -555,6 +755,39 @@ export default function FuncionarioDashboard() {
               {loading ? 'Deletando...' : 'Deletar'}
             </button>
             <button className={local.cancelBtn} onClick={closeModal}>Cancelar</button>
+          </div>
+        </div>
+      )}
+
+      {needsCompanySetup && (
+        <div className={local.modalOverlay}>
+          <div className={local.modalContent} onClick={e => e.stopPropagation()}>
+            <div className={local.modalHeader}>
+              <h2 className={local.modalTitle}>Vincular empresa</h2>
+            </div>
+
+            <div className={local.formGroup}>
+              <label className={local.formLabel}>Código da empresa</label>
+              <input
+                type="text"
+                className={local.formInput}
+                placeholder="Digite o código compartilhado pela empresa"
+                value={companyCode}
+                onChange={e => setCompanyCode(e.target.value)}
+                disabled={loading}
+              />
+            </div>
+
+            <button
+              className={local.modalActionBtn}
+              onClick={handleCompleteCompanySetup}
+              disabled={loading || !companyCode.trim()}
+            >
+              {loading ? 'Vinculando...' : 'Vincular conta'}
+            </button>
+            <button className={local.cancelBtn} onClick={handleLogout} disabled={loading}>
+              Sair
+            </button>
           </div>
         </div>
       )}

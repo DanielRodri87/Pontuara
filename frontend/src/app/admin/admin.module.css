@@ -399,6 +399,26 @@
   font-weight: 800;
   color: #A0A0A0;
   text-transform: uppercase;
+  max-width: 72px;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.emptyChart {
+  position: absolute;
+  left: 48px;
+  right: 0;
+  top: 0;
+  bottom: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6B7280;
+  font-size: 14px;
+  font-weight: 700;
+  z-index: 1;
 }
 
 .btnExportar {
@@ -759,6 +779,61 @@
   border-color: #3A7AFE;
   background-color: #FFFFFF;
   box-shadow: 0 0 0 3px rgba(58, 122, 254, 0.1);
+}
+
+.badgetGrid {
+  display: grid;
+  grid-template-columns: repeat(10, 36px);
+  gap: 8px;
+}
+
+.badgetBtn {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background-color: #F8F9FA;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.badgetBtn:hover {
+  transform: translateY(-2px);
+  background-color: #F3F4F5;
+}
+
+.badgetBtn.active {
+  background-color: #EBF5FF;
+  border-color: #3A7AFE;
+}
+
+.badgetColorRow {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.colorDot {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  border: 2px solid #FFFFFF;
+  box-shadow: 0 0 0 1px #E5E7EB;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.colorDot:hover {
+  transform: translateY(-1px);
+}
+
+.colorDot.active {
+  box-shadow: 0 0 0 2px #3A7AFE;
+  transform: scale(1.08);
 }
 
 .typeBtn {
