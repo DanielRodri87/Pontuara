@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { api } from '@/services/api';
 import local from './sidebar.module.css';
 
 interface SidebarProps {
@@ -21,9 +22,26 @@ export default function Sidebar({
   showCode = false
 }: SidebarProps) {
   const [showCodeModal, setShowCodeModal] = useState(false);
+  const [companyCode, setCompanyCode] = useState('Código indisponível');
   
-  // Código da empresa - Mockado ou vindo do metadata
-  const companyCode = user?.user_metadata?.company_code || 'PT-8829-X';
+  useEffect(() => {
+    const fetchCompanyCode = async () => {
+      if (!showCode || !user?.email) return;
+
+      try {
+        const { data: usuarios } = await api.get('/api/v1/usuarios/');
+        const usuario = usuarios.find((item: any) => item.email === user.email);
+        if (!usuario?.idempresa) return;
+
+        const { data: empresa } = await api.get(`/api/v1/empresas/${usuario.idempresa}`);
+        setCompanyCode(empresa.codigoempresa || 'Código indisponível');
+      } catch (error) {
+        console.error('Erro ao buscar código da empresa', error);
+      }
+    };
+
+    fetchCompanyCode();
+  }, [showCode, user?.email]);
 
   const handleToggle = (e: React.MouseEvent) => {
     // Evita que cliques nos botões internos disparem o toggle da sidebar
@@ -32,6 +50,7 @@ export default function Sidebar({
   };
 
   const copyToClipboard = () => {
+    if (companyCode === 'Código indisponível') return;
     navigator.clipboard.writeText(companyCode);
     // Poderia usar um toast aqui, mas vamos de alert simples para manter o foco
     alert('Código copiado para a área de transferência!');

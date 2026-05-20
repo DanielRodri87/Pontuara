@@ -31,6 +31,22 @@ export default function CadastroCard() {
   const [errorMsg, setErrorMsg] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const generateCompanyCode = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let code = '';
+    let hasNumber = false;
+    for (let i = 0; i < 15; i++) {
+      const char = chars.charAt(Math.floor(Math.random() * chars.length));
+      if (/[0-9]/.test(char)) hasNumber = true;
+      code += char;
+    }
+    if (!hasNumber) {
+      const randIndex = Math.floor(Math.random() * 15);
+      code = code.substring(0, randIndex) + Math.floor(Math.random() * 10) + code.substring(randIndex + 1);
+    }
+    return code;
+  };
+
   /**
    * Abre o seletor de arquivos de imagem utilizando File System Access API
    * ou faz o fallback para um input clássico.
@@ -143,6 +159,25 @@ export default function CadastroCard() {
     setErrorMsg('');
 
     try {
+      let empresaId: string | undefined;
+
+      if (formData.userType === 'funcionario') {
+        if (!formData.inviteCode.trim()) {
+          setErrorMsg('Informe o código da organização para continuar.');
+          setLoading(false);
+          return;
+        }
+
+        const { data: empresas } = await api.get('/api/v1/empresas/');
+        const empresa = empresas.find((item: any) => item.codigoempresa === formData.inviteCode.trim());
+        if (!empresa) {
+          setErrorMsg('Código da organização não encontrado.');
+          setLoading(false);
+          return;
+        }
+        empresaId = empresa.id;
+      }
+
       // Chama o endpoint de signup no backend
       const response = await api.post('/api/v1/auth/signup', {
         nome: formData.firstName,
@@ -151,24 +186,24 @@ export default function CadastroCard() {
         telefone: formData.phone,
         password: formData.password,
         tipo_usuario: formData.userType,
+        idempresa: empresaId,
+        pendente: formData.userType === 'funcionario',
       });
 
       console.log('Usuário cadastrado com sucesso:', response.data);
 
-      // Gera código se for empregador
       if (formData.userType === 'empregador') {
-        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-        let code = '';
-        let hasNumber = false;
-        for (let i = 0; i < 15; i++) {
-          const char = chars.charAt(Math.floor(Math.random() * chars.length));
-          if (/[0-9]/.test(char)) hasNumber = true;
-          code += char;
-        }
-        if (!hasNumber) {
-          const randIndex = Math.floor(Math.random() * 15);
-          code = code.substring(0, randIndex) + Math.floor(Math.random() * 10) + code.substring(randIndex + 1);
-        }
+        const code = generateCompanyCode();
+        // O schema atual de empresas tem apenas `nome` e `codigoempresa`.
+        // Enquanto não houver campo de nome da empresa no formulário, usamos o nome do empregador como placeholder.
+        const { data: empresa } = await api.post('/api/v1/empresas/', {
+          nome: `${formData.firstName} ${formData.lastName}`.trim(),
+          codigoempresa: code,
+        });
+        await api.put(`/api/v1/usuarios/${response.data.id}`, {
+          idempresa: empresa.id,
+          pendente: false,
+        });
         setGeneratedCode(code);
       }
 

@@ -12,7 +12,8 @@ class TrabalhoBase(BaseModel):
         titulo: Título do trabalho.
         descricao: Descrição opcional do trabalho.
         categoria: Categoria opcional do trabalho.
-        projeto: Nome opcional do projeto.
+        idprojeto: Identificador UUID opcional do projeto.
+        duracao: Duração opcional no formato aceito pelo PostgreSQL interval.
 
     Returns:
         None: Classe de schema para validação e serialização.
@@ -22,7 +23,8 @@ class TrabalhoBase(BaseModel):
     titulo: str = Field(min_length=1)
     descricao: str | None = None
     categoria: str | None = None
-    projeto: str | None = None
+    idprojeto: UUID | None = None
+    duracao: str | None = None
 
 
 class TrabalhoCreate(TrabalhoBase):
@@ -46,7 +48,8 @@ class TrabalhoUpdate(BaseModel):
         titulo: Título opcional do trabalho.
         descricao: Descrição opcional do trabalho.
         categoria: Categoria opcional do trabalho.
-        projeto: Nome opcional do projeto.
+        idprojeto: Identificador UUID opcional do projeto.
+        duracao: Duração opcional no formato aceito pelo PostgreSQL interval.
 
     Returns:
         None: Classe de schema para validação de atualização.
@@ -56,7 +59,8 @@ class TrabalhoUpdate(BaseModel):
     titulo: str | None = Field(default=None, min_length=1)
     descricao: str | None = None
     categoria: str | None = None
-    projeto: str | None = None
+    idprojeto: UUID | None = None
+    duracao: str | None = None
 
 
 class TrabalhoRead(TrabalhoBase):

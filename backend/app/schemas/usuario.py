@@ -26,19 +26,14 @@ class UsuarioBase(BaseModel):
     email: EmailStr
     telefone: str | None = None
     tipo_usuario: TipoUsuario
+    idempresa: UUID | None = None
+    pendente: bool = False
 
 
 class UsuarioCreate(UsuarioBase):
-    """Define payload de entrada para criação de usuário.
+    """Define payload de entrada para criação de usuário."""
 
-    Args:
-        senha: Senha em texto com tamanho mínimo de 6 caracteres.
-
-    Returns:
-        None: Classe de schema para validação de entrada.
-    """
-
-    senha: str = Field(min_length=6, max_length=255)
+    id: UUID | None = None
 
 
 class UsuarioUpdate(BaseModel):
@@ -60,6 +55,8 @@ class UsuarioUpdate(BaseModel):
     email: EmailStr | None = None
     telefone: str | None = None
     tipo_usuario: TipoUsuario | None = None
+    idempresa: UUID | None = None
+    pendente: bool | None = None
 
 
 class UsuarioRead(UsuarioBase):

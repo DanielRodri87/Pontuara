@@ -21,7 +21,7 @@ def create_trabalho(payload: TrabalhoCreate) -> TrabalhoRead:
     """
     trabalho = supabase_service.create_row(
         settings.supabase_trabalhos_table,
-        payload.model_dump(mode="json"),
+        payload.model_dump(mode="json", exclude_none=True),
     )
     return TrabalhoRead.model_validate(trabalho)
 
