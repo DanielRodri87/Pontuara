@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation'; // Importação do useRouter adicionada
 import { supabase } from '@/services/supabase';
+import { api } from '@/services/api';
 import styles from './LoginCard.module.css';
 
 /**
@@ -19,6 +20,12 @@ export default function LoginCard() {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
+  const redirectByUserType = async (sessionUser: any) => {
+    const { data: usuarios } = await api.get('/api/v1/usuarios/');
+    const usuario = usuarios.find((item: any) => item.id === sessionUser.id || item.email === sessionUser.email);
+    router.push(usuario?.tipo_usuario === 'empregador' ? '/admin' : '/funcionario');
+  };
+
   /**
    * Manipula a submissão do formulário de login tradicional via Supabase.
    * * @param {React.FormEvent} e - O evento de envio do formulário.
@@ -29,6 +36,12 @@ export default function LoginCard() {
     setErrorMsg('');
 
     try {
+      if (!supabase) {
+        setErrorMsg('Configure NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY no frontend.');
+        setLoading(false);
+        return;
+      }
+
       // Utiliza o Supabase para o login com e-mail e senha
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -42,8 +55,9 @@ export default function LoginCard() {
       }
 
       if (data.session) {
-        // Redireciona para o painel se a sessão for criada com sucesso
-        router.push('/funcionario');
+        localStorage.setItem('access_token', data.session.access_token);
+        localStorage.setItem('user', JSON.stringify(data.session.user));
+        await redirectByUserType(data.session.user);
       } else {
         setErrorMsg('Erro: Dados de sessão não recebidos.');
       }
