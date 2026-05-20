@@ -19,29 +19,23 @@ interface Trabalho {
   empregador_id: string;
   /** Título principal do trabalho realizado. */
   titulo: string;
-  /** Nome do projeto (opcional). */
-  projeto?: string;
+  /** ID do projeto associado ao trabalho. */
+  idprojeto?: string | null;
   /** Categoria visual (ícone) do trabalho (ex: 'pencil', 'people', 'clipboard'). */
   categoria?: string;
-  /** Utilizado para armazenar a duração em formato de string. */
+  /** Descrição textual do trabalho. */
   descricao?: string;
+  /** Duração em formato interval retornado pelo backend/Supabase. */
+  duracao?: string | null;
   /** Data e hora de criação do registro no banco. */
   criado_em: string;
 }
 
-/**
- * Representa um registro de ponto (expediente) de um funcionário.
- * @interface Expediente
- */
-interface Expediente {
-  /** ID único do expediente no banco de dados. */
+interface Projeto {
   id: string;
-  /** ID do funcionário que registrou o ponto. */
-  funcionario_id: string;
-  /** Data e hora em que o expediente foi iniciado. */
-  data_hora_inicio: string;
-  /** Data e hora em que o expediente foi encerrado (pode ser nulo se estiver em andamento). */
-  data_hora_fim: string | null;
+  titulo: string;
+  descricao?: string | null;
+  idempresa?: string | null;
 }
 
 /**
@@ -68,13 +62,13 @@ export default function FuncionarioDashboard() {
   // Estados dos Trabalhos e Modal
   const [activeModal, setActiveModal] = useState<'none' | 'new' | 'edit' | 'delete'>('none');
   const [trabalhos, setTrabalhos] = useState<Trabalho[]>([]);
+  const [projetos, setProjetos] = useState<Projeto[]>([]);
   const [selectedTrabalho, setSelectedTrabalho] = useState<Trabalho | null>(null);
-  const [formData, setFormData] = useState({ titulo: '', projeto: '', duracao: '', categoria: 'clipboard' });
+  const [formData, setFormData] = useState({ titulo: '', descricao: '', idprojeto: '', duracao: '', categoria: 'clipboard' });
 
-  // Estados dos Expedientes e Tracker ao Vivo
-  const [expedientes, setExpedientes] = useState<Expediente[]>([]);
-  const [activeExpediente, setActiveExpediente] = useState<Expediente | null>(null);
-  const [currentTimeSpan, setCurrentTimeSpan] = useState<string>('00:00:00');
+  // A tabela `expedientes` foi removida do Supabase e ainda não existe uma tabela substituta
+  // para registrar ponto. O tracker fica desativado para evitar chamadas a endpoints removidos.
+  const currentTimeSpan = '00:00:00';
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
 
   useEffect(() => {
@@ -92,8 +86,8 @@ export default function FuncionarioDashboard() {
         localStorage.setItem('user', JSON.stringify(currentUser));
 
         setUser(currentUser);
+        fetchProjetos();
         fetchTrabalhos(currentUser.id);
-        fetchExpedientes(currentUser.id);
 
       } catch (err) {
         console.error("Erro ao checar sessão:", err);
@@ -116,28 +110,6 @@ export default function FuncionarioDashboard() {
     };
   }, [router]);
 
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (activeExpediente) {
-      interval = setInterval(() => {
-        const start = new Date(activeExpediente.data_hora_inicio).getTime();
-        const now = new Date().getTime();
-        const diff = now - start;
-        
-        const hours = Math.floor(diff / (1000 * 60 * 60));
-        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-        
-        setCurrentTimeSpan(
-          `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
-        );
-      }, 1000);
-    } else {
-      setCurrentTimeSpan('00:00:00');
-    }
-    return () => clearInterval(interval);
-  }, [activeExpediente]);
-
   /**
    * Busca e filtra todos os trabalhos associados ao ID do usuário atual.
    * @param {string} userId O ID único do usuário autenticado.
@@ -151,71 +123,25 @@ export default function FuncionarioDashboard() {
     }
   };
 
-  /**
-   * Busca a lista de expedientes (pontos) do funcionário.
-   * Define o estado de expedientes e identifica se há algum em andamento.
-   * @param {string} userId O ID único do usuário autenticado.
-   */
-  const fetchExpedientes = async (userId: string) => {
+  const fetchProjetos = async () => {
     try {
-      const { data } = await api.get('/api/v1/expedientes/');
-      const userExpedientes = data.filter((e: Expediente) => e.funcionario_id === userId);
-      setExpedientes(userExpedientes);
-      
-      const active = userExpedientes.find((e: Expediente) => !e.data_hora_fim);
-      setActiveExpediente(active || null);
+      const { data } = await api.get('/api/v1/projetos/');
+      setProjetos(data);
     } catch (error) {
-      console.error('Erro ao buscar expedientes', error);
+      console.error('Erro ao buscar projetos', error);
     }
   };
 
-  /**
-   * Alterna o estado do expediente atual do usuário.
-   * Se já houver um expediente ativo, ele é encerrado gravando 'data_hora_fim'.
-   * Caso contrário, cria um novo expediente gravando 'data_hora_inicio'.
-   */
-  const handleToggleExpediente = async () => {
-    if (!user) return;
-    setLoading(true);
-    try {
-      if (activeExpediente) {
-        await api.put(`/api/v1/expedientes/${activeExpediente.id}`, { data_hora_fim: new Date().toISOString() });
-        showPopup('Expediente encerrado com sucesso!', 'success');
-      } else {
-        await api.post('/api/v1/expedientes/', { funcionario_id: user.id, data_hora_inicio: new Date().toISOString() });
-        showPopup('Expediente iniciado! Bom trabalho.', 'success');
-      }
-      await fetchExpedientes(user.id);
-    } catch (error) {
-      showPopup('Erro ao registrar o ponto.', 'error');
-    } finally {
-      setLoading(false);
-    }
+  const handleUnavailableTimeTracking = () => {
+    showPopup('Controle de ponto indisponível: a tabela Expediente foi removida.', 'error');
   };
 
   /**
-   * Calcula o sumário semanal (em milissegundos) trabalhado por dia.
-   * Agrupa as horas dos expedientes a partir do domingo até sábado.
+   * Retorna o sumário zerado enquanto não houver uma nova tabela para substituir `expedientes`.
    * @returns {number[]} Array contendo a soma de milissegundos para os dias [Dom, Seg, Ter, Qua, Qui, Sex, Sáb].
    */
   const calculateWeekSummary = () => {
-    const today = new Date();
-    const sunday = new Date(today);
-    sunday.setDate(today.getDate() - today.getDay());
-    sunday.setHours(0, 0, 0, 0);
-
-    const weekDaysMs = [0, 0, 0, 0, 0, 0, 0];
-    
-    expedientes.forEach(exp => {
-      const start = new Date(exp.data_hora_inicio);
-      if (start >= sunday) {
-        const end = exp.data_hora_fim ? new Date(exp.data_hora_fim) : new Date();
-        const diff = end.getTime() - start.getTime();
-        weekDaysMs[start.getDay()] += diff;
-      }
-    });
-
-    return weekDaysMs;
+    return [0, 0, 0, 0, 0, 0, 0];
   };
 
   /**
@@ -239,24 +165,21 @@ export default function FuncionarioDashboard() {
   const progressPercent = Math.min(100, Math.round((totalHours / 40) * 100));
 
   /**
-   * Formata e retorna o horário do primeiro expediente (entrada) do dia atual.
-   * Procura o expediente mais antigo iniciado hoje para fixar a hora de entrada.
+   * Retorna placeholder enquanto o registro de expediente não existir no schema atual.
    * @returns {string} String com o horário de entrada formatado ou '--:--' caso não haja registro.
    */
   const formatEntryTime = () => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    const todaysExpedientes = expedientes.filter(exp => {
-      const expDate = new Date(exp.data_hora_inicio);
-      return expDate >= today;
-    });
+    return '--:--';
+  };
 
-    if (todaysExpedientes.length === 0) return '--:--';
+  const getProjetoTitulo = (idprojeto?: string | null) => {
+    if (!idprojeto) return 'Sem Projeto';
+    return projetos.find(projeto => projeto.id === idprojeto)?.titulo || 'Projeto não encontrado';
+  };
 
-    todaysExpedientes.sort((a, b) => new Date(a.data_hora_inicio).getTime() - new Date(b.data_hora_inicio).getTime());
-    const start = new Date(todaysExpedientes[0].data_hora_inicio);
-    return `${start.getHours().toString().padStart(2, '0')}h ${start.getMinutes().toString().padStart(2, '0')}m`;
+  const formatIntervalForApi = (value: string) => {
+    if (!value) return undefined;
+    return value.length === 5 ? `${value}:00` : value;
   };
 
   /**
@@ -266,12 +189,13 @@ export default function FuncionarioDashboard() {
    */
   const openModal = (type: 'new' | 'edit' | 'delete', trabalho?: Trabalho) => {
     if (trabalho) setSelectedTrabalho(trabalho);
-    if (type === 'new') setFormData({ titulo: '', projeto: '', duracao: '', categoria: 'clipboard' });
+    if (type === 'new') setFormData({ titulo: '', descricao: '', idprojeto: '', duracao: '', categoria: 'clipboard' });
     if (type === 'edit' && trabalho) {
       setFormData({ 
         titulo: trabalho.titulo, 
-        projeto: trabalho.projeto || '', 
-        duracao: trabalho.descricao || '', 
+        descricao: trabalho.descricao || '',
+        idprojeto: trabalho.idprojeto || '',
+        duracao: trabalho.duracao?.slice(0, 5) || '',
         categoria: trabalho.categoria || 'clipboard', 
       });
     }
@@ -296,9 +220,10 @@ export default function FuncionarioDashboard() {
       await api.post('/api/v1/trabalhos/', {
         empregador_id: user.id,
         titulo: formData.titulo,
-        projeto: formData.projeto,
+        descricao: formData.descricao,
+        idprojeto: formData.idprojeto || undefined,
         categoria: formData.categoria,
-        descricao: formData.duracao
+        duracao: formatIntervalForApi(formData.duracao),
       });
       await fetchTrabalhos(user.id);
       showPopup('Trabalho registrado com sucesso!', 'success');
@@ -320,9 +245,10 @@ export default function FuncionarioDashboard() {
     try {
       await api.put(`/api/v1/trabalhos/${selectedTrabalho.id}`, {
         titulo: formData.titulo,
-        projeto: formData.projeto,
+        descricao: formData.descricao,
+        idprojeto: formData.idprojeto || null,
         categoria: formData.categoria,
-        descricao: formData.duracao
+        duracao: formatIntervalForApi(formData.duracao) || null,
       });
       await fetchTrabalhos(user.id);
       showPopup('Trabalho atualizado com sucesso!', 'success');
@@ -420,32 +346,13 @@ export default function FuncionarioDashboard() {
             </div>
             <div className={local.controlActions}>
               <button 
-                className={activeExpediente ? local.btnEncerrar : local.btnIniciar} 
-                onClick={handleToggleExpediente}
+                className={local.btnIniciar}
+                onClick={handleUnavailableTimeTracking}
                 disabled={loading}
               >
-                {activeExpediente ? (
-                  <>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><rect x="9" y="9" width="6" height="6"></rect></svg>
-                    Encerrar Expediente
-                  </>
-                ) : (
-                  <>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                    Iniciar Expediente
-                  </>
-                )}
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                Ponto indisponível
               </button>
-              {activeExpediente && (
-                <button 
-                  className={local.btnIntervalo}
-                  disabled={loading}
-                  onClick={handleToggleExpediente}
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
-                  Intervalo
-                </button>
-              )}
             </div>
           </div>
 
@@ -483,13 +390,13 @@ export default function FuncionarioDashboard() {
                   </div>
                   <div className={local.itemInfo}>
                     <div className={local.title}>{trab.titulo}</div>
-                    <div className={local.subtitle}>{trab.projeto || 'Sem Projeto'}</div>
+                    <div className={local.subtitle}>{getProjetoTitulo(trab.idprojeto)}</div>
                   </div>
                 </div>
                 <div className={local.itemRight}>
                   <div className={local.durationBlock}>
                     <div className={local.label}>Duração</div>
-                    <div className={local.time}>{trab.descricao || '--'}</div>
+                    <div className={local.time}>{trab.duracao?.slice(0, 5) || '--'}</div>
                   </div>
                   <div className={local.itemActions}>
                     <button className={local.iconBtn} onClick={() => openModal('edit', trab)}>
@@ -555,8 +462,8 @@ export default function FuncionarioDashboard() {
                 type="text" 
                 className={local.formInput} 
                 placeholder="Ex: Desenvolvimento da Landing Page" 
-                value={formData.projeto}
-                onChange={e => setFormData({...formData, projeto: e.target.value})}
+                value={formData.descricao}
+                onChange={e => setFormData({...formData, descricao: e.target.value})}
               />
             </div>
 
@@ -578,7 +485,22 @@ export default function FuncionarioDashboard() {
 
               <div className={local.formGroup}>
                 <label className={local.formLabel}>Projeto</label>
-                <div className={local.projectTypes}>
+                <select
+                  className={local.formInput}
+                  value={formData.idprojeto}
+                  onChange={e => setFormData({...formData, idprojeto: e.target.value})}
+                >
+                  <option value="">Sem projeto</option>
+                  {projetos.map(projeto => (
+                    <option key={projeto.id} value={projeto.id}>{projeto.titulo}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className={local.formGroup}>
+              <label className={local.formLabel}>Categoria</label>
+              <div className={local.projectTypes}>
                   <button 
                     type="button"
                     className={`${local.typeBtn} ${formData.categoria === 'clipboard' ? local.active : ''}`}
@@ -601,7 +523,6 @@ export default function FuncionarioDashboard() {
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
                   </button>
                 </div>
-              </div>
             </div>
 
             <button 

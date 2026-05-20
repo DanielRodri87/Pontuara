@@ -1,7 +1,7 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 
-from sqlalchemy import DateTime, ForeignKey, String, func
+from sqlalchemy import DateTime, ForeignKey, Interval, String, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -17,8 +17,9 @@ class Trabalho(Base):
         titulo: Título do trabalho.
         descricao: Descrição opcional do trabalho.
         categoria: Categoria opcional do trabalho.
-        projeto: Projeto opcional do trabalho.
+        idprojeto: Projeto opcional do trabalho.
         criado_em: Data e hora de criação do registro.
+        duracao: Duração opcional do trabalho.
 
     Returns:
         None: Classe ORM para persistência de trabalhos.
@@ -35,7 +36,13 @@ class Trabalho(Base):
     titulo: Mapped[str] = mapped_column(String, nullable=False)
     descricao: Mapped[str | None] = mapped_column(String, nullable=True)
     categoria: Mapped[str | None] = mapped_column(String, nullable=True)
-    projeto: Mapped[str | None] = mapped_column(String, nullable=True)
+    idprojeto: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("projetos.id", ondelete="SET NULL"),
+        nullable=True,
+    )
     criado_em: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    duracao: Mapped[timedelta | None] = mapped_column(Interval, nullable=True)
 
     empregador = relationship("Usuario", back_populates="trabalhos")
+    projeto = relationship("Projeto", back_populates="trabalhos")

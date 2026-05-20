@@ -19,7 +19,8 @@ class Settings(BaseModel):
         supabase_timeout: Tempo limite das requisições HTTP.
         supabase_usuarios_table: Nome da tabela de usuários.
         supabase_trabalhos_table: Nome da tabela de trabalhos.
-        supabase_expedientes_table: Nome da tabela de expedientes.
+        supabase_empresas_table: Nome da tabela de empresas.
+        supabase_projetos_table: Nome da tabela de projetos.
 
     Returns:
         None: Classe de configuração central da aplicação.
@@ -33,7 +34,8 @@ class Settings(BaseModel):
     supabase_timeout: float = Field(default=15.0, gt=0)
     supabase_usuarios_table: str = "usuarios"
     supabase_trabalhos_table: str = "trabalhos"
-    supabase_expedientes_table: str = "expedientes"
+    supabase_empresas_table: str = "empresas"
+    supabase_projetos_table: str = "projetos"
 
     @property
     def supabase_rest_url(self) -> str | None:
@@ -81,7 +83,8 @@ def get_settings() -> Settings:
         supabase_timeout=float(os.getenv("SUPABASE_TIMEOUT", "15")),
         supabase_usuarios_table=os.getenv("SUPABASE_USUARIOS_TABLE", "usuarios"),
         supabase_trabalhos_table=os.getenv("SUPABASE_TRABALHOS_TABLE", "trabalhos"),
-        supabase_expedientes_table=os.getenv("SUPABASE_EXPEDIENTES_TABLE", "expedientes"),
+        supabase_empresas_table=os.getenv("SUPABASE_EMPRESAS_TABLE", "empresas"),
+        supabase_projetos_table=os.getenv("SUPABASE_PROJETOS_TABLE", "projetos"),
     )
 
 

@@ -3,21 +3,27 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/services/supabase';
+import { api } from '@/services/api';
 import Sidebar from '@/components/sidebar/Sidebar';
-import { icons } from 'lucide-react';
 import local from './admin.module.css';
 
-// Mock Data
-const MOCK_PROJECTS = [
-  { id: '1', titulo: 'Artemis', desc: 'Projeto que envolve aplicação web para o cliente otimizar seus processos', icon: 'Compasso' },
-];
+interface Projeto {
+  id: string;
+  titulo: string;
+  descricao?: string | null;
+  badgets?: string | number | null;
+  idempresa?: string | null;
+}
 
+// Os indicadores abaixo ainda usam mock porque a tabela `expedientes` foi removida
+// e o schema atual não traz uma nova fonte para horas, intervalos ou produtividade.
 const MOCK_CHART_DATA = {
   Horas: [22, 15, 34, 27, 20, 8, 38], // Seg a Dom
   Produtividade: [12, 18, 14, 25, 22, 10, 5],
   Intervalos: [4, 3, 5, 4, 3, 2, 1]
 };
 
+// Mock mantido porque ainda não há endpoint/tabela de perfis detalhados de colaboradores.
 const MOCK_INDIVIDUALS = [
   { id: '1', nome: 'Iago Roberto', role: 'Front-end Developer', tarefas: 412, horas: '162h', avatar: '/images/Profile1.png' },
   { id: '2', nome: 'Rita de Cássia', role: 'UX/UI Designer', tarefas: 340, horas: '140h', avatar: '/images/Profile2.png' },
@@ -31,12 +37,10 @@ export default function AdminDashboard() {
 
   // Modais
   const [activeModal, setActiveModal] = useState<'none' | 'new' | 'edit' | 'delete' | 'indivDetails'>('none');
-  const [formData, setFormData] = useState({ titulo: '', descricao: '', badget: 'Compasso' });
-
-  // Icon Picker
-  const [iconPickerOpen, setIconPickerOpen] = useState(false);
-  const [iconColor, setIconColor] = useState('#3A7AFE');
-  const [iconSearch, setIconSearch] = useState('');
+  const [formData, setFormData] = useState({ titulo: '', descricao: '', badgets: '' });
+  const [projetos, setProjetos] = useState<Projeto[]>([]);
+  const [selectedProjeto, setSelectedProjeto] = useState<Projeto | null>(null);
+  const [loading, setLoading] = useState(false);
 
   // Gráfico Geral
   const [chartTab, setChartTab] = useState<'Horas' | 'Produtividade' | 'Intervalos'>('Horas');
@@ -53,6 +57,7 @@ export default function AdminDashboard() {
           return;
         }
         setUser(session.user);
+        fetchProjetos();
       } catch (err) {
         console.error(err);
         router.push('/');
@@ -68,16 +73,78 @@ export default function AdminDashboard() {
 
   const openModal = (type: 'new' | 'edit' | 'delete' | 'indivDetails', proj?: any) => {
     if (proj && type === 'edit') {
-      setFormData({ titulo: proj.titulo, descricao: proj.desc, badget: proj.icon });
+      setSelectedProjeto(proj);
+      setFormData({ titulo: proj.titulo, descricao: proj.descricao || '', badgets: String(proj.badgets ?? '') });
     } else if (type === 'new') {
-      setFormData({ titulo: '', descricao: '', badget: 'Compasso' });
+      setSelectedProjeto(null);
+      setFormData({ titulo: '', descricao: '', badgets: '' });
+    } else if (proj && type === 'delete') {
+      setSelectedProjeto(proj);
     }
     setActiveModal(type);
   };
 
   const closeModal = () => {
     setActiveModal('none');
-    setIconPickerOpen(false);
+    setSelectedProjeto(null);
+  };
+
+  const fetchProjetos = async () => {
+    try {
+      const { data } = await api.get('/api/v1/projetos/');
+      setProjetos(data);
+    } catch (error) {
+      console.error('Erro ao buscar projetos', error);
+    }
+  };
+
+  const handleCreateProjeto = async () => {
+    setLoading(true);
+    try {
+      await api.post('/api/v1/projetos/', {
+        titulo: formData.titulo,
+        descricao: formData.descricao || undefined,
+        badgets: formData.badgets ? Number(formData.badgets) : undefined,
+      });
+      await fetchProjetos();
+      closeModal();
+    } catch (error) {
+      console.error('Erro ao criar projeto', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateProjeto = async () => {
+    if (!selectedProjeto) return;
+    setLoading(true);
+    try {
+      await api.put(`/api/v1/projetos/${selectedProjeto.id}`, {
+        titulo: formData.titulo,
+        descricao: formData.descricao || null,
+        badgets: formData.badgets ? Number(formData.badgets) : null,
+      });
+      await fetchProjetos();
+      closeModal();
+    } catch (error) {
+      console.error('Erro ao editar projeto', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteProjeto = async () => {
+    if (!selectedProjeto) return;
+    setLoading(true);
+    try {
+      await api.delete(`/api/v1/projetos/${selectedProjeto.id}`);
+      await fetchProjetos();
+      closeModal();
+    } catch (error) {
+      console.error('Erro ao deletar projeto', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const currentIndiv = MOCK_INDIVIDUALS[indivIndex];
@@ -86,16 +153,8 @@ export default function AdminDashboard() {
   const maxDataValue = Math.max(...MOCK_CHART_DATA[chartTab]);
   const maxChartValue = Math.ceil((maxDataValue * 1.2) / 5) * 5;
 
-  // Renderiza ícones (Lucide ou Imagens antigas com mask para colorir)
+  // Renderiza ícones a partir dos SVGs existentes em public/images.
   const renderProjectIcon = (iconStr: string, size = 24, isProject = false) => {
-    if (iconStr.startsWith('lucide:')) {
-      const parts = iconStr.split(':');
-      const iconName = parts[1] as keyof typeof icons;
-      const color = parts[2] || (isProject ? '#7e8591' : '#3A7AFE');
-      const LucideIcon = icons[iconName];
-      if (LucideIcon) return <LucideIcon size={size} color={color} />;
-      return null;
-    }
     return (
       <div
         className={local.svgMask}
@@ -109,8 +168,6 @@ export default function AdminDashboard() {
       />
     );
   };
-
-  const iconNames = Object.keys(icons).filter(name => name.toLowerCase().includes(iconSearch.toLowerCase())).slice(0, 50);
 
   return (
     <div className={local.layout}>
@@ -178,22 +235,24 @@ export default function AdminDashboard() {
         </div>
 
         <div className={local.projectList}>
-          {MOCK_PROJECTS.map(proj => (
+          {projetos.length === 0 ? (
+            <p style={{ color: '#6b7280', fontSize: '14px' }}>Nenhum projeto cadastrado ainda.</p>
+          ) : projetos.map(proj => (
             <div key={proj.id} className={local.projectItem}>
               <div className={local.projectLeft}>
                 <div className={local.projectIcon}>
-                  {renderProjectIcon(proj.icon, 20, true)}
+                  {renderProjectIcon('Compasso', 20, true)}
                 </div>
                 <div className={local.projectInfo}>
                   <div className={local.title}>{proj.titulo}</div>
-                  <div className={local.desc}>{proj.desc}</div>
+                  <div className={local.desc}>{proj.descricao || 'Sem descrição'}</div>
                 </div>
               </div>
               <div className={local.projectActions}>
                 <button className={local.iconBtn} onClick={() => openModal('edit', proj)}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                 </button>
-                <button className={`${local.iconBtn} ${local.delete}`} onClick={() => openModal('delete')}>
+                <button className={`${local.iconBtn} ${local.delete}`} onClick={() => openModal('delete', proj)}>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                 </button>
               </div>
@@ -401,62 +460,24 @@ export default function AdminDashboard() {
             </div>
 
             <div className={local.formGroup}>
-              <label className={local.formLabel}>Badget</label>
-              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                <div className={`${local.typeBtn} ${local.active}`}>
-                  {renderProjectIcon(formData.badget, 20)}
-                </div>
-
-                <button
-                  type="button"
-                  className={local.typeBtn}
-                  onClick={() => setIconPickerOpen(!iconPickerOpen)}
-                  title="Abrir biblioteca de ícones"
-                >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                </button>
-              </div>
-
-              {iconPickerOpen && (
-                <div className={local.iconPickerContainer}>
-                  <div className={local.iconPickerHeader}>
-                    <input
-                      type="color"
-                      className={local.colorPicker}
-                      value={iconColor}
-                      onChange={e => setIconColor(e.target.value)}
-                    />
-                    <input
-                      type="text"
-                      className={local.iconSearch}
-                      placeholder="Pesquisar ícones..."
-                      value={iconSearch}
-                      onChange={e => setIconSearch(e.target.value)}
-                    />
-                  </div>
-                  <div className={local.iconGrid}>
-                    {iconNames.map(name => {
-                      const LucideIcon = icons[name as keyof typeof icons];
-                      return (
-                        <div
-                          key={name}
-                          className={local.iconOption}
-                          onClick={() => setFormData({ ...formData, badget: `lucide:${name}:${iconColor}` })}
-                        >
-                          <LucideIcon size={20} color={iconColor} />
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              )}
+              <label className={local.formLabel}>Badgets</label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                className={local.formInput}
+                placeholder="Ex: 1200"
+                value={formData.badgets}
+                onChange={e => setFormData({ ...formData, badgets: e.target.value })}
+              />
             </div>
 
             <button
               className={local.modalActionBtn}
-              onClick={closeModal}
+              onClick={activeModal === 'new' ? handleCreateProjeto : handleUpdateProjeto}
+              disabled={loading || !formData.titulo}
             >
-              {activeModal === 'new' ? 'Criar trabalho' : 'Editar trabalho'}
+              {loading ? 'Salvando...' : activeModal === 'new' ? 'Criar projeto' : 'Editar projeto'}
             </button>
           </div>
         </div>
@@ -473,11 +494,11 @@ export default function AdminDashboard() {
               </svg>
             </div>
 
-            <h2 className={local.deleteTitle}>Deletar trabalho?</h2>
-            <p className={local.deleteText}>Você tem certeza que quer excluir esse trabalho? Essa ação não pode ser desfeita.</p>
+            <h2 className={local.deleteTitle}>Deletar projeto?</h2>
+            <p className={local.deleteText}>Você tem certeza que quer excluir esse projeto? Essa ação não pode ser desfeita.</p>
 
-            <button className={local.modalActionBtn} onClick={closeModal}>
-              Deletar
+            <button className={local.modalActionBtn} onClick={handleDeleteProjeto} disabled={loading}>
+              {loading ? 'Deletando...' : 'Deletar'}
             </button>
             <button className={local.cancelBtn} onClick={closeModal}>Cancelar</button>
           </div>
@@ -516,14 +537,15 @@ export default function AdminDashboard() {
 
             <div className={local.workListTitle}>Trabalhos no dia</div>
             <div className={local.workListModal}>
-              {MOCK_PROJECTS.map(proj => (
+              {projetos.map(proj => (
                 <div key={proj.id} className={local.projectItem} style={{ padding: '12px 16px' }}>
                   <div className={local.projectLeft}>
                     <div className={local.projectIcon} style={{ width: 32, height: 32 }}>
-                      {renderProjectIcon(proj.icon, 16, true)}
+                      {renderProjectIcon('Compasso', 16, true)}
                     </div>
                     <div className={local.projectInfo}>
                       <div className={local.title}>{proj.titulo}</div>
+                      {/* Horas por projeto dependiam dos expedientes, que não existem mais no schema atual. */}
                       <div className={local.desc} style={{ fontSize: 10 }}>2h 30m trabalhados</div>
                     </div>
                   </div>

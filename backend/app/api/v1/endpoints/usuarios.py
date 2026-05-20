@@ -21,7 +21,7 @@ def create_usuario(payload: UsuarioCreate) -> UsuarioRead:
     """
     usuario = supabase_service.create_row(
         settings.supabase_usuarios_table,
-        payload.model_dump(mode="json"),
+        payload.model_dump(mode="json", exclude_none=True),
     )
     return UsuarioRead.model_validate(usuario)
 

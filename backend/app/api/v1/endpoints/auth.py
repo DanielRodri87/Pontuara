@@ -1,4 +1,6 @@
 import logging
+from uuid import UUID
+
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, EmailStr, Field
 
@@ -21,6 +23,8 @@ class SignupPayload(BaseModel):
     telefone: str | None = None
     password: str = Field(min_length=6, max_length=255)
     tipo_usuario: str = Field(pattern="^(funcionario|empregador)$")
+    idempresa: UUID | None = None
+    pendente: bool = False
     
 class ForgotPasswordPayload(BaseModel):
     email: EmailStr
@@ -68,18 +72,22 @@ def signup(payload: SignupPayload) -> UsuarioRead:
         
         # Depois, criar o registro na tabela de usuários
         logger.info("Criando registro na tabela de usuários...")
+        auth_user_payload = auth_user.get("user") or {}
+        auth_user_id = auth_user_payload.get("id")
         usuario_data = UsuarioCreate(
+            id=auth_user_id,
             nome=payload.nome,
             sobrenome=payload.sobrenome,
             email=email_limpo,
             telefone=payload.telefone,
             tipo_usuario=payload.tipo_usuario,
-            senha=senha_limpa  # A senha será hasheada pelo Supabase
+            idempresa=payload.idempresa,
+            pendente=payload.pendente,
         )
         
         usuario = supabase_service.create_row(
             settings.supabase_usuarios_table,
-            usuario_data.model_dump(mode="json"),
+            usuario_data.model_dump(mode="json", exclude_none=True),
         )
         logger.info(f"Usuário criado com sucesso na tabela: {usuario}")
         
