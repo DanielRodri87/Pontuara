@@ -5,6 +5,9 @@ import { useRouter } from 'next/navigation';
 import { api } from '@/services/api';
 import local from './funcionario.module.css';
 import { supabase } from '@/services/supabase';
+import { exportTrabalhosCSV } from '@/services/csv';
+import PeriodFilter from '@/components/periodFilter/PeriodFilter';
+import PendingApproval from '@/components/pendingApproval/PendingApproval';
 import Sidebar from '@/components/sidebar/Sidebar';
 
 // Tipagens conforme o banco de dados e backend
@@ -80,7 +83,16 @@ export default function FuncionarioDashboard() {
   const [timerStartedAt, setTimerStartedAt] = useState<number | null>(null);
   const [elapsedMs, setElapsedMs] = useState(0);
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
+  const [exportPeriod, setExportPeriod] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  });
+  const [listPeriod, setListPeriod] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  });
   const [needsCompanySetup, setNeedsCompanySetup] = useState(false);
+  const [isPendingApproval, setIsPendingApproval] = useState(false);
   const [pendingProfile, setPendingProfile] = useState<UsuarioPerfil | null>(null);
   const [companyCode, setCompanyCode] = useState('');
 
@@ -121,7 +133,14 @@ export default function FuncionarioDashboard() {
           return;
         }
 
+        // Se tem empresa mas está pendente, bloqueia o acesso
+        if (usuario?.pendente) {
+          setIsPendingApproval(true);
+          return;
+        }
+
         setNeedsCompanySetup(false);
+        setIsPendingApproval(false);
         fetchProjetos(usuario?.idempresa);
         fetchTrabalhos(currentUser.id);
 
@@ -155,6 +174,38 @@ export default function FuncionarioDashboard() {
 
     return () => window.clearInterval(intervalId);
   }, [timerStartedAt]);
+
+  // Polling: verifica periodicamente se o usuário foi aprovado
+  useEffect(() => {
+    if (!isPendingApproval || !pendingProfile?.id) return;
+
+    const checkApproval = async () => {
+      try {
+        const { data: usuarios } = await api.get('/api/v1/usuarios/');
+        const usuarioAtual = usuarios.find((u: any) => u.id === pendingProfile.id);
+
+        if (usuarioAtual && !usuarioAtual.pendente) {
+          // Aprovado! Recarrega os dados e libera o dashboard
+          setIsPendingApproval(false);
+          setPendingProfile(usuarioAtual);
+          const appUser = { ...user, perfil: usuarioAtual, idempresa: usuarioAtual.idempresa };
+          setUser(appUser);
+          fetchProjetos(usuarioAtual.idempresa);
+          fetchTrabalhos(user?.id || usuarioAtual.id);
+          showPopup('Você foi aprovado! Bem-vindo ao sistema.', 'success');
+        }
+      } catch (err) {
+        console.error('Erro ao verificar aprovação:', err);
+      }
+    };
+
+    // Verifica imediatamente ao entrar na tela
+    checkApproval();
+
+    const intervalId = window.setInterval(checkApproval, 15000); // a cada 15 segundos
+
+    return () => window.clearInterval(intervalId);
+  }, [isPendingApproval, pendingProfile?.id]);
 
   /**
    * Busca e filtra todos os trabalhos associados ao ID do usuário atual.
@@ -228,9 +279,8 @@ export default function FuncionarioDashboard() {
       setPendingProfile(usuario);
       setNeedsCompanySetup(false);
       setCompanyCode('');
-      await fetchProjetos(usuario.idempresa);
-      await fetchTrabalhos(user.id);
-      showPopup('Conta vinculada à empresa com sucesso!', 'success');
+      // Após vincular, bloqueia o acesso até o admin aprovar
+      setIsPendingApproval(true);
     } catch (error) {
       console.error('Erro ao vincular conta Google à empresa', error);
       showPopup('Erro ao vincular conta à empresa.', 'error');
@@ -357,6 +407,17 @@ export default function FuncionarioDashboard() {
     if (!timerStartedAt) return '--:--';
     return new Date(timerStartedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   };
+
+  // Filtra trabalhos pelo período selecionado na listagem
+  const trabalhosFiltrados = React.useMemo(() => {
+    const [yearStr, monthStr] = listPeriod.split('-');
+    const filterYear = parseInt(yearStr, 10);
+    const filterMonth = parseInt(monthStr, 10) - 1; // 0-indexed
+    return trabalhos.filter((t) => {
+      const d = new Date(t.criado_em);
+      return d.getFullYear() === filterYear && d.getMonth() === filterMonth;
+    });
+  }, [trabalhos, listPeriod]);
 
   const getProjetoTitulo = (idprojeto?: string | null) => {
     if (!idprojeto) return 'Sem Projeto';
@@ -491,6 +552,16 @@ export default function FuncionarioDashboard() {
 
   if (!user) return <p style={{ padding: '40px', textAlign: 'center' }}>Carregando perfil...</p>;
 
+  // Tela de bloqueio para usuários pendentes
+  if (isPendingApproval) {
+    return (
+      <PendingApproval
+        userName={pendingProfile?.nome || getGoogleProfileNames().nome}
+        onLogout={handleLogout}
+      />
+    );
+  }
+
   return (
     <div className={local.layout}>
       
@@ -518,11 +589,19 @@ export default function FuncionarioDashboard() {
       />
 
       {/* Conteúdo Principal */}
-      <main className={`${local.main} ${sidebarExpanded ? '' : local.sidebarCollapsed}`}>
-        <button className={local.exportBtn}>
+      <main className={`${local.main} ${sidebarExpanded ? '' : local.sidebarCollapsed}`}>          <div className={local.exportRow}>
+            <PeriodFilter period={exportPeriod} onChange={setExportPeriod} />
+            <button className={local.exportBtn} onClick={() => {
+              const [yearStr, monthStr] = exportPeriod.split('-');
+              const year = parseInt(yearStr, 10);
+              const month = parseInt(monthStr, 10) - 1; // 0-indexed
+              const exported = exportTrabalhosCSV(trabalhos, getProjetoTitulo, 'funcionario', year, month);
+              if (!exported) showPopup('Nenhuma tarefa encontrada neste período.', 'error');
+            }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
           Exportar CSV
         </button>
+          </div>
 
         <div className={local.topWidgets}>
           <div className={local.controlPanel}>
@@ -569,18 +648,47 @@ export default function FuncionarioDashboard() {
 
         {/* Registros de Trabalho */}
         <div className={local.sectionHeader}>
-          <h2 className={local.sectionTitle}>Registros de Trabalho</h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <h2 className={local.sectionTitle}>Registros de Trabalho</h2>
+            <PeriodFilter period={listPeriod} onChange={setListPeriod} />
+          </div>
           <button className={local.btnNovoTrabalho} onClick={() => openModal('new')}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
             Novo trabalho
           </button>
         </div>
 
+        {/* Resumo do período filtrado */}
+        {trabalhosFiltrados.length > 0 && (
+          <div className={local.periodSummary}>
+            <div className={local.summaryItem}>
+              <span className={local.summaryLabel}>Tarefas</span>
+              <span className={local.summaryValue}>{trabalhosFiltrados.length}</span>
+            </div>
+            <div className={local.summaryDivider}></div>
+            <div className={local.summaryItem}>
+              <span className={local.summaryLabel}>Total de Horas</span>
+              <span className={local.summaryValue}>{formatDuration(
+                trabalhosFiltrados.reduce((acc, t) => acc + parseIntervalToMs(t.duracao), 0)
+              )}</span>
+            </div>
+            <div className={local.summaryDivider}></div>
+            <div className={local.summaryItem}>
+              <span className={local.summaryLabel}>Média por Tarefa</span>
+              <span className={local.summaryValue}>{formatDuration(
+                trabalhosFiltrados.reduce((acc, t) => acc + parseIntervalToMs(t.duracao), 0) / trabalhosFiltrados.length
+              )}</span>
+            </div>
+          </div>
+        )}
+
         <div className={local.workList}>
           {trabalhos.length === 0 ? (
             <p style={{ color: '#6b7280', fontSize: '14px' }}>Nenhum trabalho registrado ainda.</p>
+          ) : trabalhosFiltrados.length === 0 ? (
+            <p style={{ color: '#6b7280', fontSize: '14px' }}>Nenhum trabalho encontrado neste período.</p>
           ) : (
-            trabalhos.map((trab) => (
+            trabalhosFiltrados.map((trab) => (
               <div key={trab.id} className={local.workItem}>
                 <div className={local.itemLeft}>
                   <div className={local.itemIcon}>
