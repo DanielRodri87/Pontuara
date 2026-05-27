@@ -124,13 +124,36 @@ export default function CadastroCard() {
       return false;
     }
 
+    // Validação de email
     if (!formData.email.trim()) {
       setErrorMsg('Por favor, preencha o email.');
       return false;
     }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email.trim())) {
+      setErrorMsg('Por favor, insira um email válido (ex: usuario@dominio.com).');
+      return false;
+    }
 
-    if (formData.password.length < 6) {
-      setErrorMsg('A senha deve ter no mínimo 6 caracteres.');
+    // Validação de senha forte
+    const passwordErrors: string[] = [];
+    if (formData.password.length < 8) {
+      passwordErrors.push('pelo menos 8 caracteres');
+    }
+    if (!/[A-Z]/.test(formData.password)) {
+      passwordErrors.push('uma letra maiúscula');
+    }
+    if (!/[a-z]/.test(formData.password)) {
+      passwordErrors.push('uma letra minúscula');
+    }
+    if (!/[0-9]/.test(formData.password)) {
+      passwordErrors.push('um número');
+    }
+    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/.test(formData.password)) {
+      passwordErrors.push('um caractere especial');
+    }
+    if (passwordErrors.length > 0) {
+      setErrorMsg(`A senha deve conter: ${passwordErrors.join(', ')}.`);
       return false;
     }
 
@@ -139,12 +162,52 @@ export default function CadastroCard() {
       return false;
     }
 
+    // Validação de telefone (se preenchido)
+    if (formData.phone.trim()) {
+      const phoneDigits = formData.phone.replace(/\D/g, '');
+      if (phoneDigits.length < 10 || phoneDigits.length > 11) {
+        setErrorMsg('Telefone inválido. Use o formato (DDD) XXXXX-XXXX.');
+        return false;
+      }
+    }
+
     if (!formData.userType) {
       setErrorMsg('Por favor, selecione o tipo de usuário.');
       return false;
     }
 
     return true;
+  };
+
+  /**
+   * Requisitos de senha para exibição visual.
+   */
+  const passwordRequirements = [
+    { label: 'Mínimo 8 caracteres', test: (p: string) => p.length >= 8 },
+    { label: 'Uma letra maiúscula', test: (p: string) => /[A-Z]/.test(p) },
+    { label: 'Uma letra minúscula', test: (p: string) => /[a-z]/.test(p) },
+    { label: 'Um número', test: (p: string) => /[0-9]/.test(p) },
+    { label: 'Um caractere especial', test: (p: string) => /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/.test(p) },
+  ];
+
+  /**
+   * Formata o telefone automaticamente enquanto o usuário digita.
+   */
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.replace(/\D/g, '');
+    let formatted = raw;
+    if (raw.length > 0) {
+      if (raw.length <= 2) {
+        formatted = `(${raw}`;
+      } else if (raw.length <= 7) {
+        formatted = `(${raw.slice(0, 2)}) ${raw.slice(2)}`;
+      } else if (raw.length <= 11) {
+        formatted = `(${raw.slice(0, 2)}) ${raw.slice(2, 7)}-${raw.slice(7)}`;
+      } else {
+        formatted = `(${raw.slice(0, 2)}) ${raw.slice(2, 7)}-${raw.slice(7, 11)}`;
+      }
+    }
+    setFormData(prev => ({ ...prev, phone: formatted }));
   };
 
   /**
@@ -214,12 +277,90 @@ export default function CadastroCard() {
         setErrorMsg(error.response.data.detail);
       } else if (error.response && error.response.status === 422) {
         setErrorMsg('Dados inválidos. Verifique os campos preenchidos.');
+      } else if (error.response && error.response.status === 409) {
+        setErrorMsg('Este email já está cadastrado. Use outro email ou faça login.');
       } else {
         setErrorMsg('Erro ao criar conta. Tente novamente mais tarde.');
       }
     } finally {
       setLoading(false);
     }
+  };
+
+  /**
+   * Valida apenas os campos da etapa atual antes de avançar.
+   * 
+   * @param {number} currentStep - A etapa atual (1, 2 ou 3).
+   * @returns {boolean} True se a etapa está válida.
+   */
+  const validateStep = (currentStep: number): boolean => {
+    setErrorMsg('');
+
+    if (currentStep === 1) {
+      if (!formData.firstName.trim()) {
+        setErrorMsg('Por favor, preencha o nome.');
+        return false;
+      }
+      if (!formData.lastName.trim()) {
+        setErrorMsg('Por favor, preencha o sobrenome.');
+        return false;
+      }
+      return true;
+    }
+
+    if (currentStep === 2) {
+      // Validação de email
+      if (!formData.email.trim()) {
+        setErrorMsg('Por favor, preencha o email.');
+        return false;
+      }
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email.trim())) {
+        setErrorMsg('Por favor, insira um email válido (ex: usuario@dominio.com).');
+        return false;
+      }
+
+      // Validação de telefone (se preenchido)
+      if (formData.phone.trim()) {
+        const phoneDigits = formData.phone.replace(/\D/g, '');
+        if (phoneDigits.length < 10 || phoneDigits.length > 11) {
+          setErrorMsg('Telefone inválido. Use o formato (DDD) XXXXX-XXXX.');
+          return false;
+        }
+      }
+
+      // Validação de senha forte
+      const passwordErrors: string[] = [];
+      if (formData.password.length < 8) {
+        passwordErrors.push('pelo menos 8 caracteres');
+      }
+      if (!/[A-Z]/.test(formData.password)) {
+        passwordErrors.push('uma letra maiúscula');
+      }
+      if (!/[a-z]/.test(formData.password)) {
+        passwordErrors.push('uma letra minúscula');
+      }
+      if (!/[0-9]/.test(formData.password)) {
+        passwordErrors.push('um número');
+      }
+      if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/.test(formData.password)) {
+        passwordErrors.push('um caractere especial');
+      }
+      if (passwordErrors.length > 0) {
+        setErrorMsg(`A senha deve conter: ${passwordErrors.join(', ')}.`);
+        return false;
+      }
+
+      if (formData.password !== formData.confirmPassword) {
+        setErrorMsg('As senhas não coincidem.');
+        return false;
+      }
+
+      return true;
+    }
+
+    // Step 3: valida no submit final
+    return true;
   };
 
   /**
@@ -230,10 +371,17 @@ export default function CadastroCard() {
   const handleNext = (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Valida os campos da etapa atual antes de avançar
+    if (!validateStep(step)) {
+      return;
+    }
+
     if (step < 3) {
+      // Limpa erro ao avançar com sucesso
+      setErrorMsg('');
       setStep(step + 1);
     } else {
-      // Última etapa: validar e submeter
+      // Última etapa: validar o restante e submeter
       submitSignup();
     }
   };
@@ -374,12 +522,12 @@ export default function CadastroCard() {
             <div className={styles.inputGroup}>
               <label htmlFor="phone" className={styles.label}>TELEFONE</label>
               <input
-                type="text"
+                type="tel"
                 id="phone"
                 className={styles.input}
-                placeholder="(DDD) 0000000-0000"
+                placeholder="(DD) 9XXXX-XXXX"
                 value={formData.phone}
-                onChange={handleChange}
+                onChange={handlePhoneChange}
                 disabled={loading}
               />
             </div>
@@ -397,6 +545,34 @@ export default function CadastroCard() {
                   required
                   disabled={loading}
                 />
+                {/* Indicadores de requisitos da senha */}
+                {formData.password.length > 0 && (
+                  <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    {passwordRequirements.map((req, idx) => {
+                      const passed = req.test(formData.password);
+                      return (
+                        <div key={idx} style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          fontSize: '11px',
+                          fontWeight: 500,
+                          color: passed ? '#10B981' : '#9CA3AF',
+                          transition: 'color 0.2s ease',
+                        }}>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                            {passed ? (
+                              <polyline points="20 6 9 17 4 12"></polyline>
+                            ) : (
+                              <circle cx="12" cy="12" r="10"></circle>
+                            )}
+                          </svg>
+                          {req.label}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
               <div className={styles.inputGroup}>
                 <label htmlFor="confirmPassword" className={styles.label}>CONFIRME SUA SENHA</label>
@@ -410,6 +586,16 @@ export default function CadastroCard() {
                   required
                   disabled={loading}
                 />
+                {formData.confirmPassword.length > 0 && formData.password !== formData.confirmPassword && (
+                  <span style={{
+                    fontSize: '11px',
+                    fontWeight: 500,
+                    color: '#EF4444',
+                    marginTop: '4px',
+                  }}>
+                    As senhas não coincidem
+                  </span>
+                )}
               </div>
             </div>
           </>

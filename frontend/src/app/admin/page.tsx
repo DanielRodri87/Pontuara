@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/services/supabase';
 import { api } from '@/services/api';
 import Sidebar from '@/components/sidebar/Sidebar';
+import { exportTrabalhosCSV } from '@/services/csv';
+import PeriodFilter from '@/components/periodFilter/PeriodFilter';
 import local from './admin.module.css';
 
 interface Projeto {
@@ -83,6 +85,14 @@ export default function AdminDashboard() {
   const [user, setUser] = useState<any>(null);
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
 
+  // Toast para feedback visual
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3500);
+  };
+
   // Modais
   const [activeModal, setActiveModal] = useState<'none' | 'new' | 'edit' | 'delete' | 'indivDetails'>('none');
   const [formData, setFormData] = useState({ titulo: '', descricao: '', badgets: BADGET_OPTIONS[0].value, badgetColor: BADGET_COLORS[0].value });
@@ -91,6 +101,16 @@ export default function AdminDashboard() {
   const [trabalhos, setTrabalhos] = useState<Trabalho[]>([]);
   const [selectedProjeto, setSelectedProjeto] = useState<Projeto | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // Período para exportação CSV
+  const [geralExportPeriod, setGeralExportPeriod] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  });
+  const [indivExportPeriod, setIndivExportPeriod] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  });
 
   // Gráfico Geral
   const [chartTab, setChartTab] = useState<'Horas' | 'Produtividade'>('Horas');
@@ -403,6 +423,21 @@ export default function AdminDashboard() {
         showCode={true}
       />
 
+      {/* Toast de notificação */}
+      {toast && (
+        <div style={{
+          position: 'fixed', top: '24px', right: '24px', zIndex: 9999,
+          padding: '16px 24px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '12px',
+          backgroundColor: toast.type === 'success' ? '#10B981' : '#EF4444', color: '#FFF',
+          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)', fontWeight: 500,
+          animation: 'slideInToast 0.3s ease-out'
+        }}>
+          {toast.message}
+        </div>
+      )}
+
+      <style>{`@keyframes slideInToast { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }`}</style>
+
       <main className={`${local.main} ${sidebarExpanded ? '' : local.sidebarCollapsed}`}>
 
         {/* Top Cards */}
@@ -547,10 +582,23 @@ export default function AdminDashboard() {
               })}
             </div>
 
-            <button className={local.btnExportar}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: 24 }}>
+              <PeriodFilter period={geralExportPeriod} onChange={setGeralExportPeriod} />
+              <button className={local.btnExportar} style={{ marginTop: 0, width: 'auto', flex: 1 }} onClick={() => {
+              const [yearStr, monthStr] = geralExportPeriod.split('-');
+              const year = parseInt(yearStr, 10);
+              const month = parseInt(monthStr, 10) - 1;
+              const getProjNome = (idprojeto?: string | null) => {
+                if (!idprojeto) return 'Sem Projeto';
+                return projetos.find(p => p.id === idprojeto)?.titulo || 'Projeto não encontrado';
+              };
+              const exported = exportTrabalhosCSV(trabalhos, getProjNome, 'geral', year, month);
+              if (!exported) showToast('Nenhuma tarefa encontrada neste período.', 'error');
+            }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
               Exportar CSV
             </button>
+            </div>
           </div>
 
           {/* Individual */}
@@ -799,10 +847,23 @@ export default function AdminDashboard() {
               })}
             </div>
 
-            <button className={local.btnExportar} style={{ marginTop: 'auto' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: 'auto', width: '100%' }}>
+              <PeriodFilter period={indivExportPeriod} onChange={setIndivExportPeriod} />
+              <button className={local.btnExportar} style={{ marginTop: 0, width: 'auto', flex: 1 }} onClick={() => {
+              const [yearStr, monthStr] = indivExportPeriod.split('-');
+              const year = parseInt(yearStr, 10);
+              const month = parseInt(monthStr, 10) - 1;
+              const getProjNome = (idprojeto?: string | null) => {
+                if (!idprojeto) return 'Sem Projeto';
+                return projetos.find(p => p.id === idprojeto)?.titulo || 'Projeto não encontrado';
+              };
+              const exported = exportTrabalhosCSV(currentIndiv.trabalhos, getProjNome, `individual-${currentIndiv.usuario.nome}-${currentIndiv.usuario.sobrenome}`, year, month);
+              if (!exported) showToast('Nenhuma tarefa encontrada neste período.', 'error');
+            }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
               Exportar CSV
             </button>
+            </div>
           </div>
         </div>
       )}

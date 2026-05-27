@@ -19,10 +19,16 @@
   margin-left: 88px;
 }
 
-.exportBtn {
+.exportRow {
   position: absolute;
   top: 40px;
   right: 60px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.exportBtn {
   background-color: #2A2A2A;
   color: #FFFFFF;
   border: none;
@@ -338,6 +344,45 @@
 
 .iconBtn.delete:hover {
   color: #ef4444;
+}
+
+/* Resumo do período filtrado */
+.periodSummary {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  background-color: #FFFFFF;
+  border-radius: 16px;
+  padding: 16px 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+}
+
+.summaryItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.summaryLabel {
+  font-size: 10px;
+  font-weight: 800;
+  color: #A0A0A0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.summaryValue {
+  font-size: 18px;
+  font-weight: 800;
+  color: #191c1d;
+  line-height: 1.2;
+}
+
+.summaryDivider {
+  width: 1px;
+  height: 40px;
+  background-color: #E7E8E9;
 }
 
 /* Sumário Semanal */

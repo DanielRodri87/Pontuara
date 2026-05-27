@@ -1,8 +1,9 @@
 import logging
+import re
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, status
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 from app.core.config import settings
 from app.schemas.usuario import UsuarioCreate, UsuarioRead
@@ -15,16 +16,54 @@ class LoginPayload(BaseModel):
     email: EmailStr
     password: str
 
+def validate_telefone(value: str | None) -> str | None:
+    """Valida e normaliza telefone brasileiro.
+    Retorna None se vazio ou None, ou formata no padrão (XX) XXXXX-XXXX.
+    """
+    if not value:
+        return None
+    # Remove tudo que não é dígito
+    digits = re.sub(r'\D', '', value)
+    if not digits:
+        return None
+    if len(digits) not in (10, 11):
+        raise ValueError('Telefone deve ter 10 ou 11 dígitos (DDD + número).')
+    # Formata no padrão (XX) XXXXX-XXXX
+    if len(digits) == 11:
+        formatted = f'({digits[:2]}) {digits[2:7]}-{digits[7:]}'
+    else:
+        formatted = f'({digits[:2]}) {digits[2:6]}-{digits[6:]}'
+    return formatted
+
+def _validate_password(password: str) -> str:
+    """Valida que a senha atende aos requisitos mínimos de segurança."""
+    if len(password) < 8:
+        raise ValueError('A senha deve ter no mínimo 8 caracteres.')
+    if not re.search(r'[a-z]', password):
+        raise ValueError('A senha deve conter pelo menos uma letra minúscula.')
+    if not re.search(r'[A-Z]', password):
+        raise ValueError('A senha deve conter pelo menos uma letra maiúscula.')
+    if not re.search(r'[0-9]', password):
+        raise ValueError('A senha deve conter pelo menos um número.')
+    if not re.search(r'[!@#$%^&*()_+\-=\[\]{};\':"\\|,.<>\/?`~]', password):
+        raise ValueError('A senha deve conter pelo menos um caractere especial.')
+    return password
+
 class SignupPayload(BaseModel):
     """Schema para criação de usuário via signup."""
     nome: str = Field(min_length=1)
     sobrenome: str = Field(min_length=1)
     email: EmailStr
     telefone: str | None = None
-    password: str = Field(min_length=6, max_length=255)
+    password: str = Field(min_length=8, max_length=255)
     tipo_usuario: str = Field(pattern="^(funcionario|empregador)$")
     idempresa: UUID | None = None
     pendente: bool = False
+
+    @field_validator('password')
+    @classmethod
+    def password_strength(cls, v: str) -> str:
+        return _validate_password(v)
     
 class ForgotPasswordPayload(BaseModel):
     email: EmailStr
@@ -33,7 +72,12 @@ class ForgotPasswordPayload(BaseModel):
 class ResetPasswordPayload(BaseModel):
     email: str | None = None
     token: str
-    new_password: str = Field(min_length=6, max_length=255)
+    new_password: str = Field(min_length=8, max_length=255)
+
+    @field_validator('new_password')
+    @classmethod
+    def new_password_strength(cls, v: str) -> str:
+        return _validate_password(v)
 
 @router.post("/login")
 def login(payload: LoginPayload):
@@ -65,11 +109,26 @@ def signup(payload: SignupPayload) -> UsuarioRead:
         
         logger.info(f"Iniciando signup para email: {email_limpo}")
         
+        # Verificar se o email já está cadastrado na tabela de usuários
+        logger.info("Verificando se o email já existe na tabela de usuários...")
+        usuario_existente = supabase_service.get_user_by_email(
+            settings.supabase_usuarios_table, email_limpo
+        )
+        if usuario_existente:
+            logger.warning(f"Tentativa de cadastro com email já existente: {email_limpo}")
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Este email já está cadastrado. Use outro email ou faça login."
+            )
+        
         # Primeiro, criar o usuário no Supabase Auth
         logger.info("Criando usuário no Supabase Auth...")
         auth_user = supabase_service.signup_user(email_limpo, senha_limpa)
         logger.info(f"Usuário Auth criado com sucesso: {auth_user}")
         
+        # Validação e normalização do telefone
+        telefone_normalizado = validate_telefone(payload.telefone)
+
         # Depois, criar o registro na tabela de usuários
         logger.info("Criando registro na tabela de usuários...")
         auth_user_payload = auth_user.get("user") or {}
@@ -79,7 +138,7 @@ def signup(payload: SignupPayload) -> UsuarioRead:
             nome=payload.nome,
             sobrenome=payload.sobrenome,
             email=email_limpo,
-            telefone=payload.telefone,
+            telefone=telefone_normalizado,
             tipo_usuario=payload.tipo_usuario,
             idempresa=payload.idempresa,
             pendente=payload.pendente,

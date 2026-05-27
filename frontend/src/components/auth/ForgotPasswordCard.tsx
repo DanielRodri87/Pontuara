@@ -96,8 +96,25 @@ export default function ForgotPasswordCard() {
       return;
     }
 
-    if (newPassword.length < 6) {
-      setErrorMsg('A senha deve ter pelo menos 6 caracteres.');
+    // Validação de senha forte
+    const passwordErrors: string[] = [];
+    if (newPassword.length < 8) {
+      passwordErrors.push('pelo menos 8 caracteres');
+    }
+    if (!/[A-Z]/.test(newPassword)) {
+      passwordErrors.push('uma letra maiúscula');
+    }
+    if (!/[a-z]/.test(newPassword)) {
+      passwordErrors.push('uma letra minúscula');
+    }
+    if (!/[0-9]/.test(newPassword)) {
+      passwordErrors.push('um número');
+    }
+    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/.test(newPassword)) {
+      passwordErrors.push('um caractere especial');
+    }
+    if (passwordErrors.length > 0) {
+      setErrorMsg(`A senha deve conter: ${passwordErrors.join(', ')}.`);
       return;
     }
 
