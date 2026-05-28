@@ -219,8 +219,7 @@ yarn-debug.log*
 yarn-error.log*
 .vercel
 .turbo
-frontend/package.json
-frontend/package-lock.json
+
 frontend/tsconfig.json
 frontend/next.config.mjs
 frontend/next-env.d.ts
