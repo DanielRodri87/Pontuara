@@ -96,11 +96,11 @@ As tabelas do Supabase precisam conter colunas compatíveis com os schemas atuai
 
   ```
 📂 pontuara/
-├── 📂 frontend/ # Interface do usuário
-├── 📂 backend/ # API e regras de negócio
-├── 📂 database/ # Scripts e modelos de dados
-├── 📄 README.md # Documentação do projeto
-└── 📄 LICENSE # Licença
+├── 📂 frontend/   # Interface do usuário
+├── 📂 backend/    # API e regras de negócio
+├── 📂 database/   # Scripts e modelos de dados
+├── 📄 README.md   # Documentação do projeto
+└── 📄 LICENSE     # Licença
   ```
 
 ## ⚠️ Avisos importantes
