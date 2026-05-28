@@ -220,7 +220,3 @@ yarn-error.log*
 .vercel
 .turbo
 
-frontend/tsconfig.json
-frontend/next.config.mjs
-frontend/next-env.d.ts
-frontend/Dockerfile
