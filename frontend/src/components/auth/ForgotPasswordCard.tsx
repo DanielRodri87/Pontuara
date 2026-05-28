@@ -8,10 +8,10 @@ import { api } from '../../services/api';
 import styles from './ForgotPasswordCard.module.css';
 
 /**
- * Componente de cartão para recuperação de senha.
- * Exibe um formulário solicitando o e-mail do usuário para envio do link.
- * 
- * @returns {JSX.Element} Cartão de recuperação de senha.
+ * Password recovery card component.
+ * Displays a form that collects the user's email and sends a reset link.
+ *
+ * @returns {JSX.Element} Password recovery card.
  */
 export default function ForgotPasswordCard() {
   const searchParams = useSearchParams();
@@ -20,7 +20,7 @@ export default function ForgotPasswordCard() {
   const [token, setToken] = useState('');
   
   useEffect(() => {
-    // 1. Verificar query params (?token_hash=...)
+    // 1. Check query params (?token_hash=...)
     const tokenHash = searchParams.get('token_hash');
     const type = searchParams.get('type');
     
@@ -30,11 +30,11 @@ export default function ForgotPasswordCard() {
       return;
     }
 
-    // 2. Verificar fragment (#error=... ou #access_token=...)
-    // O Supabase às vezes envia os dados no fragmento da URL
+    // 2. Check fragment (#error=... or #access_token=...)
+    // Supabase sometimes sends data in the URL fragment
     const hash = window.location.hash;
     if (hash) {
-      const params = new URLSearchParams(hash.substring(1)); // remove o '#'
+      const params = new URLSearchParams(hash.substring(1)); // remove '#'
       
       const error = params.get('error_description');
       if (error) {
@@ -58,7 +58,7 @@ export default function ForgotPasswordCard() {
   const [successMsg, setSuccessMsg] = useState('');
 
   /**
-   * Solicita o envio do código de recuperação.
+   * Request a password recovery code.
    */
   const handleRequestReset = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,7 +86,7 @@ export default function ForgotPasswordCard() {
   };
 
   /**
-   * Realiza a redefinição da senha.
+   * Perform the password reset.
    */
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,7 +96,7 @@ export default function ForgotPasswordCard() {
       return;
     }
 
-    // Validação de senha forte
+    // Strong password validation
     const passwordErrors: string[] = [];
     if (newPassword.length < 8) {
       passwordErrors.push('pelo menos 8 caracteres');
@@ -130,7 +130,7 @@ export default function ForgotPasswordCard() {
       });
 
       setSuccessMsg('Senha redefinida com sucesso!');
-      // Redirecionar para login após 2 segundos
+      // Redirect to login after 2 seconds
       setTimeout(() => {
         window.location.href = '/';
       }, 2000);

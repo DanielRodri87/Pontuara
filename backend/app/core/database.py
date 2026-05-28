@@ -11,13 +11,13 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 def get_db() -> Generator[Session, None, None]:
-    """Fornece sessão de banco por requisição.
+    """Provide a database session per request.
 
     Args:
         None.
 
     Returns:
-        Generator[Session, None, None]: Gerador que entrega uma sessão SQLAlchemy ativa.
+        Generator[Session, None, None]: Generator that yields an active SQLAlchemy session.
     """
     db = SessionLocal()
     try:

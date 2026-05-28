@@ -7,10 +7,10 @@ import { useRouter, usePathname } from 'next/navigation';
 import styles from './Navbar.module.css';
 
 /**
- * Barra de navegação principal (Navbar).
- * Inclui responsividade, barra de progresso de scroll da página e links âncora.
- * 
- * @returns {JSX.Element} Componente de barra de navegação.
+ * Main navigation bar.
+ * Includes responsiveness, scroll progress, and anchor links.
+ *
+ * @returns {JSX.Element} Navbar component.
  */
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -19,7 +19,7 @@ export default function Navbar() {
   const pathname = usePathname();
 
   /**
-   * Alterna a visibilidade do menu de navegação em dispositivos móveis.
+   * Toggle the navigation menu on mobile.
    */
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -48,10 +48,10 @@ export default function Navbar() {
   }, []);
 
   /**
-   * Manipula o clique nos links da navbar. Realiza o scroll suave caso esteja na home,
-   * ou redireciona o usuário para a âncora na home se estiver em outra página.
-   * 
-   * @param {string} id - O ID do elemento âncora na home page.
+   * Handle navbar clicks. Smooth-scroll on the home page,
+   * or navigate to the home anchor from another page.
+   *
+   * @param {string} id - Anchor element id on the home page.
    */
   const handleNavClick = (id: string) => {
     if (pathname === '/') {
@@ -69,7 +69,7 @@ export default function Navbar() {
 
   return (
     <nav className={styles.navbar}>
-      {/* Barra de progresso de scroll */}
+      {/* Scroll progress bar */}
       <div
         className={styles.progressBar}
         style={{ width: `${scrollProgress}%` }}
@@ -88,7 +88,7 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Mobile Menu Button */}
+        {/* Mobile menu button */}
         <button
           className={`${styles.menuButton} ${isMenuOpen ? styles.open : ''}`}
           onClick={toggleMenu}
@@ -97,7 +97,7 @@ export default function Navbar() {
           <span className={styles.hamburger}></span>
         </button>
 
-        {/* Navigation Links */}
+        {/* Navigation links */}
         <ul className={`${styles.navLinks} ${isMenuOpen ? styles.active : ''}`}>
           <li className="reveal delay-2"><button onClick={() => handleNavClick('login')}>Login</button></li>
           <li className="reveal delay-3"><button onClick={() => handleNavClick('about')}>Sobre Nós</button></li>
@@ -109,7 +109,7 @@ export default function Navbar() {
           </li>
         </ul>
 
-        {/* Cadastre-se Button (Desktop) */}
+        {/* Sign-up button (desktop) */}
         <div className="reveal delay-5">
           <Link href="/cadastro" className={styles.cadastreBtn}>
             Cadastre-se

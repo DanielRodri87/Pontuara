@@ -28,18 +28,18 @@ const faqData = [
 ];
 
 /**
- * Componente que renderiza a seção de Dúvidas Frequentes (FAQ).
- * Exibe uma lista de perguntas e respostas com efeito sanfona (accordion).
- * 
- * @returns {JSX.Element} Seção de FAQ renderizada.
+ * FAQ section component.
+ * Displays a list of questions and answers with an accordion effect.
+ *
+ * @returns {JSX.Element} Rendered FAQ section.
  */
 export default function FaqSection() {
   const [openCardId, setOpenCardId] = useState<number>(1);
 
   /**
-   * Manipula o clique em um cartão de pergunta, expandindo-o e recolhendo os demais.
-   * 
-   * @param {number} id - O identificador único da pergunta clicada.
+   * Handle a question card click, expanding it and collapsing others.
+   *
+   * @param {number} id - Unique id of the clicked question.
    */
   const handleCardClick = (id: number) => {
     if (openCardId !== id) {
@@ -51,7 +51,7 @@ export default function FaqSection() {
     <section className={styles.section}>
       <div className={styles.container}>
 
-        {/* Efeito de Fundo Premium */}
+        {/* Premium background effect */}
         <div className={styles.glowEffect}></div>
 
         <div className={styles.leftColumn}>

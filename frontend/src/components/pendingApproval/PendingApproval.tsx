@@ -7,6 +7,9 @@ interface PendingApprovalProps {
   onLogout: () => void;
 }
 
+/**
+ * Show a locked screen while the account is pending approval.
+ */
 export default function PendingApproval({ userName, onLogout }: PendingApprovalProps) {
   return (
     <div style={{
@@ -48,7 +51,7 @@ export default function PendingApproval({ userName, onLogout }: PendingApprovalP
           />
         </div>
 
-        {/* Ícone de relógio/espera */}
+        {/* Clock/wait icon */}
         <div style={{
           width: '56px',
           height: '56px',
@@ -65,7 +68,7 @@ export default function PendingApproval({ userName, onLogout }: PendingApprovalP
           </svg>
         </div>
 
-        {/* Título */}
+        {/* Title */}
         <h1 style={{
           fontSize: '22px',
           fontWeight: 800,
@@ -75,7 +78,7 @@ export default function PendingApproval({ userName, onLogout }: PendingApprovalP
           Esperando ser Aceito
         </h1>
 
-        {/* Subtítulo */}
+        {/* Subtitle */}
         <p style={{
           fontSize: '14px',
           color: '#6b7280',
@@ -93,7 +96,7 @@ export default function PendingApproval({ userName, onLogout }: PendingApprovalP
           Assim que for aprovado, você receberá acesso ao sistema de ponto eletrônico.
         </p>
 
-        {/* Indicador de verificação automática */}
+        {/* Auto-check indicator */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
@@ -113,7 +116,7 @@ export default function PendingApproval({ userName, onLogout }: PendingApprovalP
           Verificando aprovação automaticamente...
         </div>
 
-        {/* Botão Sair */}
+        {/* Logout button */}
         <button
           onClick={onLogout}
           style={{

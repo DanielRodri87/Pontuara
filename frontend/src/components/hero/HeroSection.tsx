@@ -2,10 +2,10 @@ import React from 'react';
 import styles from './HeroSection.module.css';
 
 /**
- * Componente principal (Hero) exibido na parte superior da página inicial.
- * Apresenta o título principal e uma breve descrição do produto.
- * 
- * @returns {JSX.Element} Seção Hero renderizada.
+ * Main hero component displayed at the top of the landing page.
+ * Presents the primary headline and a short product description.
+ *
+ * @returns {JSX.Element} Rendered hero section.
  */
 export default function HeroSection() {
   return (

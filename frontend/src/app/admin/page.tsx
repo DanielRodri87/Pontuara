@@ -80,12 +80,15 @@ const BADGET_COLORS = [
   { value: '8', color: '#F59E0B', label: 'Amarelo' },
 ];
 
+/**
+ * Admin dashboard page for employers.
+ */
 export default function AdminDashboard() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
 
-  // Toast para feedback visual
+  // Toast for visual feedback
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
@@ -93,7 +96,7 @@ export default function AdminDashboard() {
     setTimeout(() => setToast(null), 3500);
   };
 
-  // Modais
+  // Modals
   const [activeModal, setActiveModal] = useState<'none' | 'new' | 'edit' | 'delete' | 'indivDetails'>('none');
   const [formData, setFormData] = useState({ titulo: '', descricao: '', badgets: BADGET_OPTIONS[0].value, badgetColor: BADGET_COLORS[0].value });
   const [projetos, setProjetos] = useState<Projeto[]>([]);
@@ -102,7 +105,7 @@ export default function AdminDashboard() {
   const [selectedProjeto, setSelectedProjeto] = useState<Projeto | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Período para exportação CSV
+  // CSV export period
   const [geralExportPeriod, setGeralExportPeriod] = useState(() => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -112,10 +115,10 @@ export default function AdminDashboard() {
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   });
 
-  // Gráfico Geral
+  // Overall chart
   const [chartTab, setChartTab] = useState<'Horas' | 'Produtividade'>('Horas');
 
-  // Perfil Individual
+  // Individual profile
   const [indivIndex, setIndivIndex] = useState(0);
 
   useEffect(() => {
@@ -396,7 +399,7 @@ export default function AdminDashboard() {
   });
   const currentIndiv = individualData[indivIndex] || null;
 
-  // Renderiza ícones a partir dos SVGs existentes em public/images.
+  // Render icons from SVGs in public/images.
   const renderProjectIcon = (iconStr: string, size = 24, isProject = false, color?: string) => {
     return (
       <div
@@ -423,7 +426,7 @@ export default function AdminDashboard() {
         showCode={true}
       />
 
-      {/* Toast de notificação */}
+      {/* Toast notification */}
       {toast && (
         <div style={{
           position: 'fixed', top: '24px', right: '24px', zIndex: 9999,
@@ -440,7 +443,7 @@ export default function AdminDashboard() {
 
       <main className={`${local.main} ${sidebarExpanded ? '' : local.sidebarCollapsed}`}>
 
-        {/* Top Cards */}
+        {/* Top cards */}
         <div className={local.topCards}>
           <div className={local.statCard}>
             <div className={local.cardHeader}>
@@ -483,7 +486,7 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Projetos */}
+        {/* Projects */}
         <div className={local.sectionHeader}>
           <h2 className={local.sectionTitle}>Projetos</h2>
           <button className={local.btnNovo} onClick={() => openModal('new')}>
@@ -518,9 +521,9 @@ export default function AdminDashboard() {
           ))}
         </div>
 
-        {/* Dashboard Grid (Charts) */}
+        {/* Dashboard grid (charts) */}
         <div className={local.dashboardGrid}>
-          {/* Geral */}
+          {/* Overall */}
           <div className={local.geralCard}>
             <div className={local.geralHeader}>
               <h3>Geral</h3>
@@ -655,7 +658,7 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Aprovações Pendentes */}
+        {/* Pending approvals */}
         <div className={local.approvalsCard}>
           <h3>Aprovações Pendentes</h3>
           <table className={local.table}>
@@ -697,7 +700,7 @@ export default function AdminDashboard() {
 
       </main>
 
-      {/* Modais CRUD Projetos */}
+      {/* Project CRUD modals */}
       {(activeModal === 'new' || activeModal === 'edit') && (
         <div className={local.modalOverlay} onClick={closeModal}>
           <div className={local.modalContent} onClick={e => e.stopPropagation()}>

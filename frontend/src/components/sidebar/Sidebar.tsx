@@ -13,6 +13,9 @@ interface SidebarProps {
   showCode?: boolean;
 }
 
+/**
+ * Sidebar with profile info and company code access.
+ */
 export default function Sidebar({ 
   user, 
   sidebarExpanded, 
@@ -44,7 +47,7 @@ export default function Sidebar({
   }, [showCode, user?.email]);
 
   const handleToggle = (e: React.MouseEvent) => {
-    // Evita que cliques nos botões internos disparem o toggle da sidebar
+    // Prevent inner button clicks from toggling the sidebar
     if ((e.target as HTMLElement).closest('button')) return;
     setSidebarExpanded(!sidebarExpanded);
   };
@@ -52,7 +55,7 @@ export default function Sidebar({
   const copyToClipboard = () => {
     if (companyCode === 'Código indisponível') return;
     navigator.clipboard.writeText(companyCode);
-    // Poderia usar um toast aqui, mas vamos de alert simples para manter o foco
+    // A toast could be used here, but a simple alert keeps it focused
     alert('Código copiado para a área de transferência!');
   };
 

@@ -3,21 +3,21 @@ import Image from 'next/image';
 import styles from './Footer.module.css';
 
 /**
- * Componente de rodapé da aplicação.
- * Exibe direitos autorais, logo e contato.
- * 
- * @returns {JSX.Element} Rodapé renderizado.
+ * Application footer component.
+ * Shows copyright, logo, and contact.
+ *
+ * @returns {JSX.Element} Rendered footer.
  */
 export default function Footer() {
   return (
     <footer className={styles.footer}>
       <div className={styles.container}>
-        {/* Direitos Autorais */}
+        {/* Copyright */}
         <div className={`${styles.copy} reveal delay-18`}>
           © 2024 PONTUARÁ. ALL RIGHTS RESERVED
         </div>
 
-        {/* Logo Central */}
+        {/* Center logo */}
         <div className={`${styles.logoWrapper} reveal delay-19`}>
           <Image
             src="/images/Logo.svg"
@@ -27,7 +27,7 @@ export default function Footer() {
           />
         </div>
 
-        {/* Email de Contato */}
+        {/* Contact email */}
         <div className={`${styles.contact} reveal delay-20`}>
           CONTATO@PONTUARA.COM
         </div>

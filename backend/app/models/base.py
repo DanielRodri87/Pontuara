@@ -2,13 +2,13 @@ from sqlalchemy.orm import DeclarativeBase
 
 
 class Base(DeclarativeBase):
-    """Define a base declarativa para os modelos ORM.
+    """Define the declarative base for ORM models.
 
     Args:
         None.
 
     Returns:
-        None: Classe base para herança dos modelos.
+        None: Base class for model inheritance.
     """
 
     pass

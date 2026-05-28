@@ -5,10 +5,10 @@ import Image from 'next/image';
 import styles from './AboutSection.module.css';
 
 /**
- * Componente que renderiza a seção "Sobre Nós".
- * Exibe os pilares e vantagens da plataforma (Registro, Escala, Flexibilidade, Conformidade).
- * 
- * @returns {JSX.Element} Seção "Sobre Nós" renderizada.
+ * "About Us" section component.
+ * Shows platform pillars and benefits (Record, Scale, Flexibility, Compliance).
+ *
+ * @returns {JSX.Element} Rendered "About Us" section.
  */
 export default function AboutSection() {
   return (
@@ -22,7 +22,7 @@ export default function AboutSection() {
         </header>
 
         <div className={styles.grid}>
-          {/* Card 1: Registre */}
+          {/* Card 1: Record */}
           <div className={`${styles.card} ${styles.card1} reveal delay-3`}>
             <div className={`${styles.iconWrapper} ${styles.iconRegistre}`}>
               <Image src="/images/Compasso.svg" alt="Registre" width={24} height={24} />
@@ -33,7 +33,7 @@ export default function AboutSection() {
             </p>
           </div>
 
-          {/* Card 2: Escale */}
+          {/* Card 2: Scale */}
           <div className={`${styles.card} ${styles.card2} reveal delay-4`}>
             <div className={`${styles.iconWrapper} ${styles.iconEscale}`}>
               <Image src="/images/Raio.svg" alt="Escale" width={24} height={24} />
@@ -44,7 +44,7 @@ export default function AboutSection() {
             </p>
           </div>
 
-          {/* Card 3: Flexibilidade */}
+          {/* Card 3: Flexibility */}
           <div className={`${styles.card} ${styles.card3} reveal delay-5`}>
             <div className={`${styles.iconWrapper} ${styles.iconFlex}`}>
               <Image src="/images/Modelos.svg" alt="Flexibilidade" width={24} height={24} />
@@ -55,7 +55,7 @@ export default function AboutSection() {
             </p>
           </div>
 
-          {/* Card 4: Conformidade */}
+          {/* Card 4: Compliance */}
           <div className={`${styles.card} ${styles.card4} reveal delay-6`}>
             <div className={styles.card4Content}>
               <h3 className={`${styles.cardTitle} ${styles.card4Title}`}>Conformidade Legal e Segurança</h3>

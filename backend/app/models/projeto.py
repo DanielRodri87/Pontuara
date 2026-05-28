@@ -9,7 +9,7 @@ from app.models.base import Base
 
 
 class Projeto(Base):
-    """Mapeia a tabela `projetos` no ORM."""
+    """Map the `projetos` table in the ORM."""
 
     __tablename__ = "projetos"
 

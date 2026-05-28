@@ -11,13 +11,13 @@ router = APIRouter(prefix="/usuarios", tags=["usuarios"])
 
 @router.post("/", response_model=UsuarioRead, status_code=status.HTTP_201_CREATED)
 def create_usuario(payload: UsuarioCreate) -> UsuarioRead:
-    """Cria um usuário no Supabase.
+    """Create a user in Supabase.
 
     Args:
-        payload: Dados de entrada para criação do usuário.
+        payload: Input data for user creation.
 
     Returns:
-        UsuarioRead: Usuário criado com `id` e `criado_em`.
+        UsuarioRead: Created user with `id` and `criado_em`.
     """
     usuario = supabase_service.create_row(
         settings.supabase_usuarios_table,
@@ -28,13 +28,13 @@ def create_usuario(payload: UsuarioCreate) -> UsuarioRead:
 
 @router.get("/", response_model=list[UsuarioRead])
 def list_usuarios() -> list[UsuarioRead]:
-    """Lista os usuários cadastrados no Supabase.
+    """List users registered in Supabase.
 
     Args:
         None.
 
     Returns:
-        list[UsuarioRead]: Coleção de usuários cadastrados.
+        list[UsuarioRead]: Collection of registered users.
     """
     usuarios = supabase_service.list_rows(settings.supabase_usuarios_table)
     return [UsuarioRead.model_validate(usuario) for usuario in usuarios]
@@ -42,13 +42,13 @@ def list_usuarios() -> list[UsuarioRead]:
 
 @router.get("/{usuario_id}", response_model=UsuarioRead)
 def get_usuario(usuario_id: UUID) -> UsuarioRead:
-    """Busca um usuário por identificador.
+    """Fetch a user by identifier.
 
     Args:
-        usuario_id: Identificador UUID do usuário.
+        usuario_id: User UUID identifier.
 
     Returns:
-        UsuarioRead: Usuário encontrado.
+        UsuarioRead: User found.
     """
     usuario = supabase_service.get_row(settings.supabase_usuarios_table, usuario_id)
     return UsuarioRead.model_validate(usuario)
@@ -56,17 +56,17 @@ def get_usuario(usuario_id: UUID) -> UsuarioRead:
 
 @router.put("/{usuario_id}", response_model=UsuarioRead)
 def update_usuario(usuario_id: UUID, payload: UsuarioUpdate) -> UsuarioRead:
-    """Atualiza parcialmente um usuário no Supabase.
+    """Partially update a user in Supabase.
 
     Args:
-        usuario_id: Identificador UUID do usuário.
-        payload: Dados parciais para atualização do usuário.
+        usuario_id: User UUID identifier.
+        payload: Partial data to update the user.
 
     Returns:
-        UsuarioRead: Usuário atualizado.
+        UsuarioRead: Updated user.
 
     Raises:
-        HTTPException: Quando o usuário não é encontrado.
+        HTTPException: When the user is not found.
     """
     atualizacoes = payload.model_dump(mode="json", exclude_unset=True)
     if not atualizacoes:
@@ -77,16 +77,16 @@ def update_usuario(usuario_id: UUID, payload: UsuarioUpdate) -> UsuarioRead:
 
 @router.delete("/{usuario_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_usuario(usuario_id: UUID) -> None:
-    """Remove um usuário no Supabase.
+    """Remove a user in Supabase.
 
     Args:
-        usuario_id: Identificador UUID do usuário.
+        usuario_id: User UUID identifier.
 
     Returns:
-        None: Resposta sem conteúdo quando a remoção é concluída.
+        None: No-content response when deletion completes.
 
     Raises:
-        HTTPException: Quando o usuário não é encontrado.
+        HTTPException: When the user is not found.
     """
     supabase_service.delete_row(settings.supabase_usuarios_table, usuario_id)
     return None

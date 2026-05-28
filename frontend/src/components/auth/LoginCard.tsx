@@ -3,18 +3,19 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation'; // Importação do useRouter adicionada
+import { useRouter } from 'next/navigation'; // Added useRouter import
 import { supabase } from '@/services/supabase';
 import { api } from '@/services/api';
 import styles from './LoginCard.module.css';
 
 /**
- * Componente de cartão de login da plataforma.
- * Oferece login por e-mail/senha ou integração OAuth com Google.
- * * @returns {JSX.Element} O formulário de login.
+ * Platform login card component.
+ * Supports email/password login or Google OAuth.
+ *
+ * @returns {JSX.Element} Login form.
  */
 export default function LoginCard() {
-  const router = useRouter(); // Inicialização do router
+  const router = useRouter(); // Router initialization
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -27,8 +28,9 @@ export default function LoginCard() {
   };
 
   /**
-   * Manipula a submissão do formulário de login tradicional via Supabase.
-   * * @param {React.FormEvent} e - O evento de envio do formulário.
+   * Handle the traditional login form submission via Supabase.
+   *
+   * @param {React.FormEvent} e - Form submit event.
    */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,7 +44,7 @@ export default function LoginCard() {
         return;
       }
 
-      // Utiliza o Supabase para o login com e-mail e senha
+      // Use Supabase for email/password login
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -71,7 +73,7 @@ export default function LoginCard() {
   };
 
   /**
-   * Inicia o fluxo de login OAuth através do Google (Supabase).
+   * Start the OAuth login flow via Google (Supabase).
    */
   const handleGoogleLogin = async () => {
     if (!supabase) {

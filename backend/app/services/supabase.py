@@ -10,26 +10,26 @@ logger = logging.getLogger(__name__)
 
 
 class SupabaseService:
-    """Cliente mínimo para operar via REST com tabelas do Supabase.
+    """Minimal client to operate via REST with Supabase tables.
 
     Args:
         None.
 
     Returns:
-        None: Serviço reutilizável para operações CRUD no Supabase.
+        None: Reusable service for CRUD operations in Supabase.
     """
 
     def _ensure_configured(self) -> tuple[str, str]:
-        """Valida se o Supabase foi configurado no ambiente.
+        """Validate that Supabase is configured in the environment.
 
         Args:
             None.
 
         Returns:
-            tuple[str, str]: URL REST do Supabase e chave de acesso configuradas.
+            tuple[str, str]: Configured Supabase REST URL and access key.
 
         Raises:
-            HTTPException: Quando a configuração obrigatória não foi preenchida.
+            HTTPException: When required configuration is missing.
         """
         if not settings.supabase_rest_url or not settings.supabase_key:
             raise HTTPException(
@@ -39,14 +39,14 @@ class SupabaseService:
         return settings.supabase_rest_url, settings.supabase_key
 
     def _headers(self, *, prefer: str | None = None, accept_object: bool = False) -> dict[str, str]:
-        """Monta os cabeçalhos usados nas requisições ao Supabase.
+        """Build headers used in Supabase requests.
 
         Args:
-            prefer: Valor opcional do cabeçalho `Prefer`.
-            accept_object: Indica se a resposta deve retornar um único objeto.
+            prefer: Optional value for the `Prefer` header.
+            accept_object: Whether the response should return a single object.
 
         Returns:
-            dict[str, str]: Cabeçalhos HTTP necessários para autenticação e perfil.
+            dict[str, str]: HTTP headers required for auth and profile.
         """
         _, supabase_key = self._ensure_configured()
         headers = {
@@ -72,21 +72,21 @@ class SupabaseService:
         prefer: str | None = None,
         accept_object: bool = False,
     ) -> httpx.Response:
-        """Executa uma requisição HTTP contra a API REST do Supabase.
+        """Execute an HTTP request against the Supabase REST API.
 
         Args:
-            method: Método HTTP utilizado na requisição.
-            table: Nome da tabela alvo no Supabase.
-            params: Parâmetros de consulta enviados na URL.
-            json: Corpo JSON enviado na requisição, quando aplicável.
-            prefer: Valor opcional do cabeçalho `Prefer`.
-            accept_object: Indica se a resposta deve ser tratada como objeto único.
+            method: HTTP method used in the request.
+            table: Target table name in Supabase.
+            params: Query params sent in the URL.
+            json: JSON body sent in the request, when applicable.
+            prefer: Optional value for the `Prefer` header.
+            accept_object: Whether the response should be treated as a single object.
 
         Returns:
-            httpx.Response: Resposta HTTP retornada pelo Supabase.
+            httpx.Response: HTTP response returned by Supabase.
 
         Raises:
-            HTTPException: Quando há falha de conexão ou erro retornado pelo Supabase.
+            HTTPException: When connection fails or Supabase returns an error.
         """
         rest_url, _ = self._ensure_configured()
         try:
@@ -119,26 +119,26 @@ class SupabaseService:
         return response
 
     def list_rows(self, table: str) -> list[dict[str, object]]:
-        """Lista todos os registros de uma tabela no Supabase.
+        """List all records from a Supabase table.
 
         Args:
-            table: Nome da tabela consultada.
+            table: Table name to query.
 
         Returns:
-            list[dict[str, object]]: Lista de registros retornados pelo Supabase.
+            list[dict[str, object]]: List of records returned by Supabase.
         """
         response = self._request("GET", table, params={"select": "*"})
         return response.json()
 
     def get_row(self, table: str, item_id: UUID) -> dict[str, object]:
-        """Busca um registro específico por identificador.
+        """Fetch a specific record by identifier.
 
         Args:
-            table: Nome da tabela consultada.
-            item_id: Identificador UUID do registro.
+            table: Table name to query.
+            item_id: Record UUID identifier.
 
         Returns:
-            dict[str, object]: Registro retornado pelo Supabase.
+            dict[str, object]: Record returned by Supabase.
         """
         response = self._request(
             "GET",
@@ -149,33 +149,33 @@ class SupabaseService:
         return response.json()
 
     def get_user_by_email(self, table: str, email: str) -> dict[str, object] | None:
-        """Busca um usuário pelo e-mail.
+        """Fetch a user by email.
 
         Args:
-            table: Nome da tabela consultada.
-            email: E-mail do usuário.
+            table: Table name to query.
+            email: User email.
 
         Returns:
-            dict[str, object] | None: Registro do usuário ou None se não encontrado.
+            dict[str, object] | None: User record or None if not found.
         """
         response = self._request(
             "GET",
             table,
             params={"select": "*", "email": f"eq.{email}"},
-            accept_object=False, # Pode retornar lista vazia
+            accept_object=False, # May return an empty list
         )
         data = response.json()
         return data[0] if data else None
 
     def create_row(self, table: str, payload: dict[str, object]) -> dict[str, object]:
-        """Cria um novo registro em uma tabela do Supabase.
+        """Create a new record in a Supabase table.
 
         Args:
-            table: Nome da tabela de destino.
-            payload: Dados do registro a ser criado.
+            table: Target table name.
+            payload: Data for the record to be created.
 
         Returns:
-            dict[str, object]: Registro criado e devolvido pelo Supabase.
+            dict[str, object]: Record created and returned by Supabase.
         """
         response = self._request(
             "POST",
@@ -187,18 +187,18 @@ class SupabaseService:
         return data[0]
 
     def update_row(self, table: str, item_id: UUID, payload: dict[str, object]) -> dict[str, object]:
-        """Atualiza um registro existente em uma tabela do Supabase.
+        """Update an existing record in a Supabase table.
 
         Args:
-            table: Nome da tabela de destino.
-            item_id: Identificador UUID do registro.
-            payload: Campos e valores a serem atualizados.
+            table: Target table name.
+            item_id: Record UUID identifier.
+            payload: Fields and values to update.
 
         Returns:
-            dict[str, object]: Registro atualizado retornado pelo Supabase.
+            dict[str, object]: Updated record returned by Supabase.
 
         Raises:
-            HTTPException: Quando o registro não é encontrado.
+            HTTPException: When the record is not found.
         """
         response = self._request(
             "PATCH",
@@ -213,17 +213,17 @@ class SupabaseService:
         return data[0]
 
     def delete_row(self, table: str, item_id: UUID) -> None:
-        """Remove um registro de uma tabela do Supabase.
+        """Remove a record from a Supabase table.
 
         Args:
-            table: Nome da tabela de destino.
-            item_id: Identificador UUID do registro.
+            table: Target table name.
+            item_id: Record UUID identifier.
 
         Returns:
-            None: Não retorna conteúdo quando a remoção é concluída.
+            None: No content is returned when deletion completes.
 
         Raises:
-            HTTPException: Quando o registro não é encontrado.
+            HTTPException: When the record is not found.
         """
         response = self._request(
             "DELETE",
@@ -236,17 +236,17 @@ class SupabaseService:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Registro não encontrado")
 
     def login_user(self, email: str, password: str) -> dict[str, object]:
-        """Autentica um utilizador através da API Auth do Supabase.
+        """Authenticate a user through the Supabase Auth API.
 
         Args:
-            email: O e-mail do utilizador.
-            password: A palavra-passe do utilizador.
+            email: User email.
+            password: User password.
 
         Returns:
-            dict[str, object]: Dados da sessão (incluindo access_token) retornados pelo Supabase.
+            dict[str, object]: Session data (including access_token) returned by Supabase.
             
         Raises:
-            HTTPException: Quando as credenciais são inválidas ou há falha na comunicação.
+            HTTPException: When credentials are invalid or communication fails.
         """
         if not settings.supabase_url or not settings.supabase_key:
             raise HTTPException(
@@ -284,17 +284,17 @@ class SupabaseService:
         return response.json()
 
     def signup_user(self, email: str, password: str) -> dict[str, object]:
-        """Cria um novo utilizador no Supabase Auth (signup).
+        """Create a new user in Supabase Auth (signup).
 
         Args:
-            email: O e-mail do novo utilizador.
-            password: A palavra-passe do novo utilizador.
+            email: New user email.
+            password: New user password.
 
         Returns:
-            dict[str, object]: Dados do usuário criado retornados pelo Supabase Auth.
+            dict[str, object]: Created user data returned by Supabase Auth.
             
         Raises:
-            HTTPException: Quando há erro na criação (ex: email já existe).
+            HTTPException: When creation fails (e.g., email already exists).
         """
         try:
             if not settings.supabase_url or not settings.supabase_key:
@@ -356,14 +356,14 @@ class SupabaseService:
             )
 
     def recover_password(self, email: str, redirect_to: str | None = None) -> dict[str, object]:
-        """Inicia o processo de recuperação de senha enviando um e-mail.
+        """Start password recovery by sending an email.
 
         Args:
-            email: O e-mail do utilizador.
-            redirect_to: URL opcional para redirecionamento após clicar no link.
+            email: User email.
+            redirect_to: Optional URL to redirect after clicking the link.
 
         Returns:
-            dict[str, object]: Resposta do Supabase Auth.
+            dict[str, object]: Supabase Auth response.
         """
         auth_url = f"{settings.supabase_url.rstrip('/')}/auth/v1/recover"
         headers = {
@@ -394,15 +394,15 @@ class SupabaseService:
         return response.json()
 
     def verify_otp(self, email: str | None, token: str, type: str = "recovery") -> dict[str, object]:
-        """Verifica um código OTP ou token de recuperação.
+        """Verify an OTP code or recovery token.
 
         Args:
-            email: O e-mail do utilizador (opcional para alguns tipos).
-            token: O código ou token recebido.
-            type: O tipo de verificação (default: "recovery").
+            email: User email (optional for some types).
+            token: Received code or token.
+            type: Verification type (default: "recovery").
 
         Returns:
-            dict[str, object]: Dados da sessão (incluindo access_token).
+            dict[str, object]: Session data (including access_token).
         """
         auth_url = f"{settings.supabase_url.rstrip('/')}/auth/v1/verify"
         headers = {
@@ -433,14 +433,14 @@ class SupabaseService:
         return response.json()
 
     def update_user_password(self, access_token: str, new_password: str) -> dict[str, object]:
-        """Atualiza a senha do utilizador autenticado.
+        """Update the authenticated user's password.
 
         Args:
-            access_token: Token de acesso do utilizador.
-            new_password: A nova senha.
+            access_token: User access token.
+            new_password: New password.
 
         Returns:
-            dict[str, object]: Dados do usuário atualizado.
+            dict[str, object]: Updated user data.
         """
         auth_url = f"{settings.supabase_url.rstrip('/')}/auth/v1/user"
         headers = {
@@ -461,7 +461,7 @@ class SupabaseService:
             error_detail = f"Erro ao atualizar senha (Status {response.status_code})"
             try:
                 payload = response.json()
-                # Tenta pegar a mensagem de erro específica do Supabase
+                # Try to extract a Supabase-specific error message
                 if isinstance(payload, dict):
                     error_detail = payload.get("message") or payload.get("error_description") or payload.get("msg") or error_detail
             except ValueError:

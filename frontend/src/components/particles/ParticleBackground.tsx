@@ -4,11 +4,11 @@ import { useEffect, useRef } from 'react';
 import styles from './ParticleBackground.module.css';
 
 /**
- * Componente de fundo animado utilizando partículas em um canvas HTML5.
- * Renderiza pontos flutuantes com interatividade com o mouse e conexões
- * quando próximos uns dos outros.
- * 
- * @returns {JSX.Element} Fundo com efeito de partículas.
+ * Animated background component using particles on an HTML5 canvas.
+ * Renders floating points with mouse interaction and connections
+ * when they are close to each other.
+ *
+ * @returns {JSX.Element} Particle background.
  */
 export default function ParticleBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -49,7 +49,7 @@ export default function ParticleBackground() {
 
     const particles = Array.from({ length: PARTICLE_COUNT }, () => {
       const angle = Math.random() * Math.PI * 2;
-      const speed = 0.2; // Velocidade base extremamente lenta
+      const speed = 0.2; // Extremely slow base speed
       const vx = Math.cos(angle) * speed;
       const vy = Math.sin(angle) * speed;
       return {
@@ -67,7 +67,7 @@ export default function ParticleBackground() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       for (const p of particles) {
-        // Interação com mouse fluida (afeta a velocidade)
+        // Smooth mouse interaction (affects velocity)
         if (mouse.x !== null && mouse.y !== null) {
           const dx = p.x - mouse.x;
           const dy = p.y - mouse.y;
@@ -82,11 +82,11 @@ export default function ParticleBackground() {
         p.x += p.vx;
         p.y += p.vy;
 
-        // Damping: retorna suavemente para a velocidade base
+        // Damping: ease back to base speed
         p.vx = p.vx * 0.95 + p.baseVx * 0.05;
         p.vy = p.vy * 0.95 + p.baseVy * 0.05;
 
-        // Quicar nas bordas
+        // Bounce on edges
         if (p.x < 0 || p.x > canvas.width) {
           p.vx *= -1;
           p.baseVx *= -1;
@@ -98,14 +98,14 @@ export default function ParticleBackground() {
         p.x = Math.max(0, Math.min(canvas.width, p.x));
         p.y = Math.max(0, Math.min(canvas.height, p.y));
 
-        // Desenhar partícula
+        // Draw particle
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
         ctx.fillStyle = `rgba(${PARTICLE_COLOR}, 0.2)`;
         ctx.fill();
       }
 
-      // Desenhar conexões
+      // Draw connections
       for (let i = 0; i < particles.length; i++) {
         for (let j = i + 1; j < particles.length; j++) {
           const dx = particles[i].x - particles[j].x;

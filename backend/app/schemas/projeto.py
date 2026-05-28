@@ -5,7 +5,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class ProjetoBase(BaseModel):
-    """Define campos compartilhados do domínio de projeto."""
+    """Define shared fields for the project domain."""
 
     titulo: str = Field(min_length=1)
     descricao: str | None = None
@@ -14,13 +14,13 @@ class ProjetoBase(BaseModel):
 
 
 class ProjetoCreate(ProjetoBase):
-    """Define payload de entrada para criação de projeto."""
+    """Define input payload for project creation."""
 
     pass
 
 
 class ProjetoUpdate(BaseModel):
-    """Define payload de entrada para atualização parcial de projeto."""
+    """Define input payload for partial project updates."""
 
     titulo: str | None = Field(default=None, min_length=1)
     descricao: str | None = None
@@ -29,7 +29,7 @@ class ProjetoUpdate(BaseModel):
 
 
 class ProjetoRead(ProjetoBase):
-    """Define payload de saída para leitura de projeto."""
+    """Define output payload for project reads."""
 
     id: UUID
 
