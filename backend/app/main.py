@@ -16,10 +16,10 @@ app = FastAPI(
     version=settings.app_version,
 )
 
-# Configuração de CORS
+# CORS configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Em produção, você deve especificar as origens permitidas
+    allow_origins=["*"],  # In production, you should specify the allowed origins
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -30,13 +30,13 @@ app.include_router(api_router, prefix="/api/v1")
 
 @app.get("/health", tags=["health"])
 def healthcheck() -> dict[str, str]:
-    """Retorna o status básico da API.
+    """Return the basic API health status.
 
     Args:
         None.
 
     Returns:
-        dict[str, str]: Resposta de saúde da aplicação.
+        dict[str, str]: Application health response.
     """
     return {
         "status": "ok",

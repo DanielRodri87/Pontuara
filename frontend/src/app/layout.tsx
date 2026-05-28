@@ -8,12 +8,12 @@ export const metadata: Metadata = {
 };
 
 /**
- * Layout principal da aplicação (Root Layout).
- * Define a estrutura básica de HTML e body para todas as páginas.
- * 
- * @param {Object} props - Propriedades do componente.
- * @param {React.ReactNode} props.children - Os componentes filhos renderizados dentro do layout.
- * @returns {JSX.Element} Estrutura principal do HTML.
+ * Main application layout (Root Layout).
+ * Defines the base HTML/body structure for all pages.
+ *
+ * @param {Object} props - Component props.
+ * @param {React.ReactNode} props.children - Children rendered inside the layout.
+ * @returns {JSX.Element} Main HTML structure.
  */
 export default function RootLayout({
   children,

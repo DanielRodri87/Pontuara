@@ -11,10 +11,10 @@ import Footer from '@/components/footer/Footer';
 import styles from './page.module.css';
 
 /**
- * Página inicial (Landing Page e Login).
- * Apresenta a plataforma e inclui a área para autenticação do usuário.
- * 
- * @returns {JSX.Element} Página de login e apresentação.
+ * Home page (landing + login).
+ * Presents the platform and includes user authentication.
+ *
+ * @returns {JSX.Element} Landing and login page.
  */
 export default function LoginPage() {
   useEffect(() => {
@@ -38,7 +38,7 @@ export default function LoginPage() {
       {/* Navbar */}
       <Navbar />
 
-      {/* Hero Section com Login Card */}
+      {/* Hero section with login card */}
       <main id="login" className={styles.main}>
         <ParticleBackground />
         <div className={styles.heroContainer}>
@@ -51,12 +51,12 @@ export default function LoginPage() {
         </div>
       </main>
 
-      {/* Seção Sobre Nós */}
+      {/* About section */}
       <div id="about">
         <AboutSection />
       </div>
 
-      {/* Seção Dúvidas Frequentes */}
+      {/* FAQ section */}
       <div id="faq">
         <FaqSection />
       </div>

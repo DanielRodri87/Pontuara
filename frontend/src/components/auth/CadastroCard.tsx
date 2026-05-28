@@ -7,10 +7,10 @@ import { api } from '@/services/api';
 import styles from './CadastroCard.module.css';
 
 /**
- * Componente que renderiza o fluxo de cadastro em etapas (wizard).
- * Coleta informações do usuário e, no final, registra no backend via API.
- * 
- * @returns {JSX.Element} Cartão de cadastro multi-etapas.
+ * Component that renders a multi-step signup flow (wizard).
+ * Collects user data and submits it to the backend API.
+ *
+ * @returns {JSX.Element} Multi-step signup card.
  */
 export default function CadastroCard() {
   const [step, setStep] = useState(1);
@@ -48,8 +48,8 @@ export default function CadastroCard() {
   };
 
   /**
-   * Abre o seletor de arquivos de imagem utilizando File System Access API
-   * ou faz o fallback para um input clássico.
+   * Open the image file picker using the File System Access API,
+   * or fall back to a standard input.
    */
   const handleImageClick = async () => {
     // Try the modern File System Access API for a more native feel
@@ -71,7 +71,7 @@ export default function CadastroCard() {
         reader.readAsDataURL(file);
         return;
       } catch (err) {
-        // User cancelled or error, fallback to standard input if it's not a cancel
+        // User cancelled or error, fall back to standard input if not a cancel
         if ((err as Error).name === 'AbortError') return;
       }
     }
@@ -81,9 +81,9 @@ export default function CadastroCard() {
   };
 
   /**
-   * Atualiza a imagem de perfil no estado a partir do input de arquivo clássico.
-   * 
-   * @param {React.ChangeEvent<HTMLInputElement>} e - Evento de alteração do input.
+   * Update the profile image state from a standard file input.
+   *
+   * @param {React.ChangeEvent<HTMLInputElement>} e - Input change event.
    */
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -97,9 +97,9 @@ export default function CadastroCard() {
   };
 
   /**
-   * Manipula alterações em inputs genéricos do formulário.
-   * 
-   * @param {React.ChangeEvent<HTMLInputElement>} e - Evento de alteração do input.
+   * Handle changes from generic form inputs.
+   *
+   * @param {React.ChangeEvent<HTMLInputElement>} e - Input change event.
    */
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
@@ -107,9 +107,9 @@ export default function CadastroCard() {
   };
 
   /**
-   * Valida os dados do formulário antes de enviar.
-   * 
-   * @returns {boolean} True se todos os dados são válidos, false caso contrário.
+   * Validate the form data before submitting.
+   *
+   * @returns {boolean} True if all data is valid, otherwise false.
    */
   const validateFormData = (): boolean => {
     setErrorMsg('');
@@ -124,7 +124,7 @@ export default function CadastroCard() {
       return false;
     }
 
-    // Validação de email
+    // Email validation
     if (!formData.email.trim()) {
       setErrorMsg('Por favor, preencha o email.');
       return false;
@@ -135,7 +135,7 @@ export default function CadastroCard() {
       return false;
     }
 
-    // Validação de senha forte
+    // Strong password validation
     const passwordErrors: string[] = [];
     if (formData.password.length < 8) {
       passwordErrors.push('pelo menos 8 caracteres');
@@ -162,7 +162,7 @@ export default function CadastroCard() {
       return false;
     }
 
-    // Validação de telefone (se preenchido)
+    // Phone validation (if provided)
     if (formData.phone.trim()) {
       const phoneDigits = formData.phone.replace(/\D/g, '');
       if (phoneDigits.length < 10 || phoneDigits.length > 11) {
@@ -180,7 +180,7 @@ export default function CadastroCard() {
   };
 
   /**
-   * Requisitos de senha para exibição visual.
+   * Password requirements shown in the UI.
    */
   const passwordRequirements = [
     { label: 'Mínimo 8 caracteres', test: (p: string) => p.length >= 8 },
@@ -191,7 +191,7 @@ export default function CadastroCard() {
   ];
 
   /**
-   * Formata o telefone automaticamente enquanto o usuário digita.
+   * Auto-format the phone number while typing.
    */
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value.replace(/\D/g, '');
@@ -211,7 +211,7 @@ export default function CadastroCard() {
   };
 
   /**
-   * Submete o formulário de cadastro para o backend.
+   * Submit the signup form to the backend.
    */
   const submitSignup = async () => {
     if (!validateFormData()) {
@@ -241,7 +241,7 @@ export default function CadastroCard() {
         empresaId = empresa.id;
       }
 
-      // Chama o endpoint de signup no backend
+      // Call the backend signup endpoint
       const response = await api.post('/api/v1/auth/signup', {
         nome: formData.firstName,
         sobrenome: formData.lastName,
@@ -257,8 +257,8 @@ export default function CadastroCard() {
 
       if (formData.userType === 'empregador') {
         const code = generateCompanyCode();
-        // O schema atual de empresas tem apenas `nome` e `codigoempresa`.
-        // Enquanto não houver campo de nome da empresa no formulário, usamos o nome do empregador como placeholder.
+        // The current company schema only has `nome` and `codigoempresa`.
+        // Until there is a company name field, use the employer name as a placeholder.
         const { data: empresa } = await api.post('/api/v1/empresas/', {
           nome: `${formData.firstName} ${formData.lastName}`.trim(),
           codigoempresa: code,
@@ -288,10 +288,10 @@ export default function CadastroCard() {
   };
 
   /**
-   * Valida apenas os campos da etapa atual antes de avançar.
-   * 
-   * @param {number} currentStep - A etapa atual (1, 2 ou 3).
-   * @returns {boolean} True se a etapa está válida.
+   * Validate only the current step before moving forward.
+   *
+   * @param {number} currentStep - Current step (1, 2, or 3).
+   * @returns {boolean} True if the step is valid.
    */
   const validateStep = (currentStep: number): boolean => {
     setErrorMsg('');
@@ -309,7 +309,7 @@ export default function CadastroCard() {
     }
 
     if (currentStep === 2) {
-      // Validação de email
+      // Email validation
       if (!formData.email.trim()) {
         setErrorMsg('Por favor, preencha o email.');
         return false;
@@ -320,7 +320,7 @@ export default function CadastroCard() {
         return false;
       }
 
-      // Validação de telefone (se preenchido)
+      // Phone validation (if provided)
       if (formData.phone.trim()) {
         const phoneDigits = formData.phone.replace(/\D/g, '');
         if (phoneDigits.length < 10 || phoneDigits.length > 11) {
@@ -329,7 +329,7 @@ export default function CadastroCard() {
         }
       }
 
-      // Validação de senha forte
+      // Strong password validation
       const passwordErrors: string[] = [];
       if (formData.password.length < 8) {
         passwordErrors.push('pelo menos 8 caracteres');
@@ -359,35 +359,35 @@ export default function CadastroCard() {
       return true;
     }
 
-    // Step 3: valida no submit final
+    // Step 3: validate on final submit
     return true;
   };
 
   /**
-   * Avança para a próxima etapa do cadastro ou finaliza o processo.
-   * 
-   * @param {React.FormEvent} e - O evento do formulário submetido.
+   * Move to the next signup step or finish the process.
+   *
+   * @param {React.FormEvent} e - Submitted form event.
    */
   const handleNext = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Valida os campos da etapa atual antes de avançar
+    // Validate the current step before advancing
     if (!validateStep(step)) {
       return;
     }
 
     if (step < 3) {
-      // Limpa erro ao avançar com sucesso
+      // Clear errors on successful step advance
       setErrorMsg('');
       setStep(step + 1);
     } else {
-      // Última etapa: validar o restante e submeter
+      // Final step: validate the remaining fields and submit
       submitSignup();
     }
   };
 
   /**
-   * Copia o código de convite gerado para a área de transferência do usuário.
+   * Copy the generated invite code to the clipboard.
    */
   const copyToClipboard = async () => {
     try {
@@ -399,7 +399,7 @@ export default function CadastroCard() {
   };
 
   /**
-   * Retorna para a etapa anterior no formulário de cadastro.
+   * Go back to the previous step in the signup form.
    */
   const handleBack = () => {
     if (step > 1) {

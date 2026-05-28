@@ -11,13 +11,13 @@ router = APIRouter(prefix="/trabalhos", tags=["trabalhos"])
 
 @router.post("/", response_model=TrabalhoRead, status_code=status.HTTP_201_CREATED)
 def create_trabalho(payload: TrabalhoCreate) -> TrabalhoRead:
-    """Cria um trabalho no Supabase.
+    """Create a job in Supabase.
 
     Args:
-        payload: Dados de entrada para criação do trabalho.
+        payload: Input data for job creation.
 
     Returns:
-        TrabalhoRead: Trabalho criado com `id` e `criado_em`.
+        TrabalhoRead: Created job with `id` and `criado_em`.
     """
     trabalho = supabase_service.create_row(
         settings.supabase_trabalhos_table,
@@ -28,13 +28,13 @@ def create_trabalho(payload: TrabalhoCreate) -> TrabalhoRead:
 
 @router.get("/", response_model=list[TrabalhoRead])
 def list_trabalhos() -> list[TrabalhoRead]:
-    """Lista os trabalhos cadastrados no Supabase.
+    """List jobs registered in Supabase.
 
     Args:
         None.
 
     Returns:
-        list[TrabalhoRead]: Coleção de trabalhos cadastrados.
+        list[TrabalhoRead]: Collection of registered jobs.
     """
     trabalhos = supabase_service.list_rows(settings.supabase_trabalhos_table)
     return [TrabalhoRead.model_validate(trabalho) for trabalho in trabalhos]
@@ -42,13 +42,13 @@ def list_trabalhos() -> list[TrabalhoRead]:
 
 @router.get("/{trabalho_id}", response_model=TrabalhoRead)
 def get_trabalho(trabalho_id: UUID) -> TrabalhoRead:
-    """Busca um trabalho por identificador.
+    """Fetch a job by identifier.
 
     Args:
-        trabalho_id: Identificador UUID do trabalho.
+        trabalho_id: Job UUID identifier.
 
     Returns:
-        TrabalhoRead: Trabalho encontrado.
+        TrabalhoRead: Job found.
     """
     trabalho = supabase_service.get_row(settings.supabase_trabalhos_table, trabalho_id)
     return TrabalhoRead.model_validate(trabalho)
@@ -56,17 +56,17 @@ def get_trabalho(trabalho_id: UUID) -> TrabalhoRead:
 
 @router.put("/{trabalho_id}", response_model=TrabalhoRead)
 def update_trabalho(trabalho_id: UUID, payload: TrabalhoUpdate) -> TrabalhoRead:
-    """Atualiza parcialmente um trabalho no Supabase.
+    """Partially update a job in Supabase.
 
     Args:
-        trabalho_id: Identificador UUID do trabalho.
-        payload: Dados parciais para atualização do trabalho.
+        trabalho_id: Job UUID identifier.
+        payload: Partial data to update the job.
 
     Returns:
-        TrabalhoRead: Trabalho atualizado.
+        TrabalhoRead: Updated job.
 
     Raises:
-        HTTPException: Quando o trabalho não é encontrado.
+        HTTPException: When the job is not found.
     """
     atualizacoes = payload.model_dump(mode="json", exclude_unset=True)
     if not atualizacoes:
@@ -77,16 +77,16 @@ def update_trabalho(trabalho_id: UUID, payload: TrabalhoUpdate) -> TrabalhoRead:
 
 @router.delete("/{trabalho_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_trabalho(trabalho_id: UUID) -> None:
-    """Remove um trabalho no Supabase.
+    """Remove a job in Supabase.
 
     Args:
-        trabalho_id: Identificador UUID do trabalho.
+        trabalho_id: Job UUID identifier.
 
     Returns:
-        None: Resposta sem conteúdo quando a remoção é concluída.
+        None: No-content response when deletion completes.
 
     Raises:
-        HTTPException: Quando o trabalho não é encontrado.
+        HTTPException: When the job is not found.
     """
     supabase_service.delete_row(settings.supabase_trabalhos_table, trabalho_id)
     return None

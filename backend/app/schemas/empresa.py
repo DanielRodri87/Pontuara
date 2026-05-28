@@ -4,27 +4,27 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class EmpresaBase(BaseModel):
-    """Define campos compartilhados do domínio de empresa."""
+    """Define shared fields for the company domain."""
 
     nome: str = Field(min_length=1)
     codigoempresa: str = Field(min_length=1)
 
 
 class EmpresaCreate(EmpresaBase):
-    """Define payload de entrada para criação de empresa."""
+    """Define input payload for company creation."""
 
     pass
 
 
 class EmpresaUpdate(BaseModel):
-    """Define payload de entrada para atualização parcial de empresa."""
+    """Define input payload for partial company updates."""
 
     nome: str | None = Field(default=None, min_length=1)
     codigoempresa: str | None = Field(default=None, min_length=1)
 
 
 class EmpresaRead(EmpresaBase):
-    """Define payload de saída para leitura de empresa."""
+    """Define output payload for company reads."""
 
     id: UUID
 

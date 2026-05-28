@@ -7,6 +7,9 @@ interface PeriodFilterProps {
   onChange: (value: string) => void;
 }
 
+/**
+ * Render a month filter used by dashboards and exports.
+ */
 export default function PeriodFilter({ period, onChange }: PeriodFilterProps) {
   return (
     <label style={{

@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-// Utiliza a porta 7000 conforme definido no docker-compose
+// Use port 7000 as defined in docker-compose
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:7000';
 
 export const api = axios.create({
@@ -10,7 +10,7 @@ export const api = axios.create({
   },
 });
 
-// Interceptor para adicionar o Bearer Token do Supabase automaticamente nas requisições
+// Interceptor to attach the Supabase Bearer token automatically
 api.interceptors.request.use(
   (config) => {
     if (typeof window !== 'undefined') {

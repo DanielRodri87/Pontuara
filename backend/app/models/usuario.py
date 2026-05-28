@@ -9,21 +9,21 @@ from app.models.base import Base
 
 
 class Usuario(Base):
-    """Mapeia a tabela `usuarios` no ORM.
+    """Map the `usuarios` table in the ORM.
 
     Args:
-        id: Identificador UUID primário.
-        nome: Nome do usuário.
-        sobrenome: Sobrenome do usuário.
-        email: E-mail único do usuário.
-        telefone: Telefone opcional do usuário.
-        tipo_usuario: Tipo do usuário no domínio.
-        criado_em: Data e hora de criação do registro.
-        idempresa: Empresa vinculada ao usuário.
-        pendente: Indica se o vínculo do usuário está pendente.
+        id: Primary UUID identifier.
+        nome: User first name.
+        sobrenome: User last name.
+        email: User unique email.
+        telefone: Optional user phone.
+        tipo_usuario: User type in the domain.
+        criado_em: Record creation timestamp.
+        idempresa: Company linked to the user.
+        pendente: Whether the user link is pending.
 
     Returns:
-        None: Classe ORM para persistência de usuários.
+        None: ORM class for user persistence.
     """
 
     __tablename__ = "usuarios"

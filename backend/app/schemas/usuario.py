@@ -8,17 +8,17 @@ TipoUsuario = Literal["funcionario", "empregador"]
 
 
 class UsuarioBase(BaseModel):
-    """Define campos compartilhados do domínio de usuário.
+    """Define shared fields for the user domain.
 
     Args:
-        nome: Nome do usuário.
-        sobrenome: Sobrenome do usuário.
-        email: E-mail válido do usuário.
-        telefone: Telefone opcional do usuário.
-        tipo_usuario: Perfil do usuário (`funcionario` ou `empregador`).
+        nome: User first name.
+        sobrenome: User last name.
+        email: Valid user email.
+        telefone: Optional user phone.
+        tipo_usuario: User role (`funcionario` or `empregador`).
 
     Returns:
-        None: Classe de schema para validação e serialização.
+        None: Schema class for validation and serialization.
     """
 
     nome: str = Field(min_length=1)
@@ -31,23 +31,23 @@ class UsuarioBase(BaseModel):
 
 
 class UsuarioCreate(UsuarioBase):
-    """Define payload de entrada para criação de usuário."""
+    """Define input payload for user creation."""
 
     id: UUID | None = None
 
 
 class UsuarioUpdate(BaseModel):
-    """Define payload de entrada para atualização parcial de usuário.
+    """Define input payload for partial user updates.
 
     Args:
-        nome: Nome opcional do usuário.
-        sobrenome: Sobrenome opcional do usuário.
-        email: E-mail opcional do usuário.
-        telefone: Telefone opcional do usuário.
-        tipo_usuario: Perfil opcional do usuário.
+        nome: Optional user first name.
+        sobrenome: Optional user last name.
+        email: Optional user email.
+        telefone: Optional user phone.
+        tipo_usuario: Optional user role.
 
     Returns:
-        None: Classe de schema para validação de atualização.
+        None: Schema class for update validation.
     """
 
     nome: str | None = Field(default=None, min_length=1)
@@ -60,14 +60,14 @@ class UsuarioUpdate(BaseModel):
 
 
 class UsuarioRead(UsuarioBase):
-    """Define payload de saída para leitura de usuário.
+    """Define output payload for user reads.
 
     Args:
-        id: Identificador UUID do usuário.
-        criado_em: Data e hora de criação do registro.
+        id: User UUID identifier.
+        criado_em: Record creation timestamp.
 
     Returns:
-        None: Classe de schema para serialização de resposta.
+        None: Schema class for response serialization.
     """
 
     id: UUID

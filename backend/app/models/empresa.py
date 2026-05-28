@@ -8,7 +8,7 @@ from app.models.base import Base
 
 
 class Empresa(Base):
-    """Mapeia a tabela `empresas` no ORM."""
+    """Map the `empresas` table in the ORM."""
 
     __tablename__ = "empresas"
 

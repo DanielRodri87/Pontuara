@@ -1,5 +1,5 @@
 /**
- * Serviço de exportação CSV para registros de trabalho.
+ * CSV export service for work records.
  */
 
 interface TrabalhoCSV {
@@ -14,7 +14,7 @@ interface TrabalhoCSV {
 }
 
 /**
- * Formata um valor de duração (interval) para uma string legível (ex: 2h 30m).
+ * Format a duration value (interval) into a readable string (e.g., 2h 30m).
  */
 function formatDurationForCSV(value?: string | null): string {
   if (!value) return '--';
@@ -30,7 +30,7 @@ function formatDurationForCSV(value?: string | null): string {
 }
 
 /**
- * Formata uma data ISO para o formato brasileiro (dd/mm/aaaa).
+ * Format an ISO date to the Brazilian format (dd/mm/yyyy).
  */
 function formatDateForCSV(dateStr: string): string {
   const date = new Date(dateStr);
@@ -42,7 +42,7 @@ function formatDateForCSV(dateStr: string): string {
 }
 
 /**
- * Gera o conteúdo CSV a partir da lista de trabalhos.
+ * Generate CSV content from the job list.
  */
 function generateCSVContent(trabalhos: TrabalhoCSV[]): string {
   const header = 'Título;Descrição;Categoria;Projeto;Duração;Data\n';
@@ -61,7 +61,7 @@ function generateCSVContent(trabalhos: TrabalhoCSV[]): string {
 }
 
 /**
- * Dispara o download de um arquivo CSV no navegador.
+ * Trigger a CSV file download in the browser.
  */
 function downloadCSV(content: string, filename: string): void {
   const BOM = '\uFEFF';
@@ -78,28 +78,28 @@ function downloadCSV(content: string, filename: string): void {
 }
 
 /**
- * Verifica se uma data pertence ao mês e ano especificados.
+ * Check whether a date belongs to the given month and year.
  */
 function isInMonth(date: Date, year: number, month: number): boolean {
   return date.getFullYear() === year && date.getMonth() === month;
 }
 
 /**
- * Retorna o nome do mês em português para o filename.
+ * Return a month label for the filename.
  */
 function monthLabel(month: number): string {
   return String(month + 1).padStart(2, '0');
 }
 
 /**
- * Exporta os trabalhos de um período específico (mês/ano) como CSV.
+ * Export jobs for a specific period (month/year) as CSV.
  *
- * @param trabalhos Lista completa de trabalhos.
- * @param getProjetoNome Função opcional para obter o nome do projeto a partir do idprojeto.
- * @param prefix Prefixo opcional para o nome do arquivo (ex: "funcionario").
- * @param year Ano para filtrar (opcional, padrão = ano atual).
- * @param month Mês para filtrar (opcional, padrão = mês atual, 0-indexed: 0 = Janeiro).
- * @returns `true` se o CSV foi gerado e baixado, `false` se não havia tarefas no período.
+ * @param trabalhos Full list of jobs.
+ * @param getProjetoNome Optional function to map project id to project name.
+ * @param prefix Optional filename prefix (e.g., "funcionario").
+ * @param year Year filter (optional, defaults to current year).
+ * @param month Month filter (optional, defaults to current month, 0-indexed: 0 = January).
+ * @returns `true` when the CSV was generated and downloaded, `false` if there were no tasks.
  */
 export function exportTrabalhosCSV(
   trabalhos: TrabalhoCSV[],

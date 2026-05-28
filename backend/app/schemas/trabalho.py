@@ -5,18 +5,18 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class TrabalhoBase(BaseModel):
-    """Define campos compartilhados do domínio de trabalho.
+    """Define shared fields for the job domain.
 
     Args:
-        empregador_id: Identificador UUID do empregador.
-        titulo: Título do trabalho.
-        descricao: Descrição opcional do trabalho.
-        categoria: Categoria opcional do trabalho.
-        idprojeto: Identificador UUID opcional do projeto.
-        duracao: Duração opcional no formato aceito pelo PostgreSQL interval.
+        empregador_id: Employer UUID identifier.
+        titulo: Job title.
+        descricao: Optional job description.
+        categoria: Optional job category.
+        idprojeto: Optional project UUID identifier.
+        duracao: Optional duration in a format accepted by PostgreSQL interval.
 
     Returns:
-        None: Classe de schema para validação e serialização.
+        None: Schema class for validation and serialization.
     """
 
     empregador_id: UUID
@@ -28,31 +28,31 @@ class TrabalhoBase(BaseModel):
 
 
 class TrabalhoCreate(TrabalhoBase):
-    """Define payload de entrada para criação de trabalho.
+    """Define input payload for job creation.
 
     Args:
         None.
 
     Returns:
-        None: Classe de schema para validação de entrada.
+        None: Schema class for input validation.
     """
 
     pass
 
 
 class TrabalhoUpdate(BaseModel):
-    """Define payload de entrada para atualização parcial de trabalho.
+    """Define input payload for partial job updates.
 
     Args:
-        empregador_id: Identificador UUID opcional do empregador.
-        titulo: Título opcional do trabalho.
-        descricao: Descrição opcional do trabalho.
-        categoria: Categoria opcional do trabalho.
-        idprojeto: Identificador UUID opcional do projeto.
-        duracao: Duração opcional no formato aceito pelo PostgreSQL interval.
+        empregador_id: Optional employer UUID identifier.
+        titulo: Optional job title.
+        descricao: Optional job description.
+        categoria: Optional job category.
+        idprojeto: Optional project UUID identifier.
+        duracao: Optional duration in a format accepted by PostgreSQL interval.
 
     Returns:
-        None: Classe de schema para validação de atualização.
+        None: Schema class for update validation.
     """
 
     empregador_id: UUID | None = None
@@ -64,14 +64,14 @@ class TrabalhoUpdate(BaseModel):
 
 
 class TrabalhoRead(TrabalhoBase):
-    """Define payload de saída para leitura de trabalho.
+    """Define output payload for job reads.
 
     Args:
-        id: Identificador UUID do trabalho.
-        criado_em: Data e hora de criação do registro.
+        id: Job UUID identifier.
+        criado_em: Record creation timestamp.
 
     Returns:
-        None: Classe de schema para serialização de resposta.
+        None: Schema class for response serialization.
     """
 
     id: UUID

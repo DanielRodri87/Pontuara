@@ -8,22 +8,22 @@ load_dotenv()
 
 
 class Settings(BaseModel):
-    """Define configurações centrais da aplicação.
+    """Define the application's core settings.
 
     Args:
-        app_name: Nome público da aplicação.
-        app_version: Versão atual da API.
-        supabase_url: URL base do projeto Supabase.
-        supabase_key: Chave de acesso utilizada na API REST do Supabase.
-        supabase_schema: Schema utilizado nas requisições ao Supabase.
-        supabase_timeout: Tempo limite das requisições HTTP.
-        supabase_usuarios_table: Nome da tabela de usuários.
-        supabase_trabalhos_table: Nome da tabela de trabalhos.
-        supabase_empresas_table: Nome da tabela de empresas.
-        supabase_projetos_table: Nome da tabela de projetos.
+        app_name: Public application name.
+        app_version: Current API version.
+        supabase_url: Base URL for the Supabase project.
+        supabase_key: Access key used by the Supabase REST API.
+        supabase_schema: Schema used in Supabase requests.
+        supabase_timeout: HTTP request timeout.
+        supabase_usuarios_table: Users table name.
+        supabase_trabalhos_table: Jobs table name.
+        supabase_empresas_table: Companies table name.
+        supabase_projetos_table: Projects table name.
 
     Returns:
-        None: Classe de configuração central da aplicação.
+        None: Central settings class for the application.
     """
 
     app_name: str = "Pontuara API"
@@ -39,13 +39,13 @@ class Settings(BaseModel):
 
     @property
     def supabase_rest_url(self) -> str | None:
-        """Monta a URL base da API REST do Supabase.
+        """Build the Supabase REST API base URL.
 
         Args:
             None.
 
         Returns:
-            str | None: URL REST completa do Supabase quando configurada.
+            str | None: Full Supabase REST URL when configured.
         """
         if not self.supabase_url:
             return None
@@ -53,26 +53,26 @@ class Settings(BaseModel):
 
     @property
     def supabase_configured(self) -> bool:
-        """Indica se as credenciais mínimas do Supabase foram definidas.
+        """Indicate whether minimal Supabase credentials are set.
 
         Args:
             None.
 
         Returns:
-            bool: `True` quando URL e chave do Supabase estão configuradas.
+            bool: `True` when the Supabase URL and key are configured.
         """
         return bool(self.supabase_rest_url and self.supabase_key)
 
 
 @lru_cache
 def get_settings() -> Settings:
-    """Carrega as configurações da aplicação a partir do ambiente.
+    """Load application settings from the environment.
 
     Args:
         None.
 
     Returns:
-        Settings: Objeto consolidado com as configurações da aplicação.
+        Settings: Consolidated application settings object.
     """
     return Settings(
         app_name=os.getenv("APP_NAME", "Pontuara API"),

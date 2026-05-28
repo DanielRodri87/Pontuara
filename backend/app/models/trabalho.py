@@ -9,20 +9,20 @@ from app.models.base import Base
 
 
 class Trabalho(Base):
-    """Mapeia a tabela `trabalhos` no ORM.
+    """Map the `trabalhos` table in the ORM.
 
     Args:
-        id: Identificador UUID primário.
-        empregador_id: Chave estrangeira para `usuarios.id`.
-        titulo: Título do trabalho.
-        descricao: Descrição opcional do trabalho.
-        categoria: Categoria opcional do trabalho.
-        idprojeto: Projeto opcional do trabalho.
-        criado_em: Data e hora de criação do registro.
-        duracao: Duração opcional do trabalho.
+        id: Primary UUID identifier.
+        empregador_id: Foreign key to `usuarios.id`.
+        titulo: Job title.
+        descricao: Optional job description.
+        categoria: Optional job category.
+        idprojeto: Optional project for the job.
+        criado_em: Record creation timestamp.
+        duracao: Optional job duration.
 
     Returns:
-        None: Classe ORM para persistência de trabalhos.
+        None: ORM class for job persistence.
     """
 
     __tablename__ = "trabalhos"

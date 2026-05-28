@@ -7,10 +7,10 @@ import Footer from '../../components/footer/Footer';
 import styles from './page.module.css';
 
 /**
- * Página de recuperação de senha.
- * Renderiza o fluxo onde o usuário pode solicitar a redefinição de sua senha.
- * 
- * @returns {JSX.Element} Página de "Esqueceu a senha".
+ * Password recovery page.
+ * Renders the flow where the user can request a password reset.
+ *
+ * @returns {JSX.Element} "Forgot password" page.
  */
 export default function EsqueceuSenhaPage() {
   return (

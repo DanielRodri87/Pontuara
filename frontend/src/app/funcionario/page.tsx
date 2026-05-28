@@ -10,27 +10,27 @@ import PeriodFilter from '@/components/periodFilter/PeriodFilter';
 import PendingApproval from '@/components/pendingApproval/PendingApproval';
 import Sidebar from '@/components/sidebar/Sidebar';
 
-// Tipagens conforme o banco de dados e backend
+// Types aligned with the database and backend
 /**
- * Representa um registro de trabalho associado a um usuário.
+ * Represents a work record associated with a user.
  * @interface Trabalho
  */
 interface Trabalho {
-  /** ID único do trabalho no banco de dados. */
+  /** Unique work id in the database. */
   id: string;
-  /** ID do empregador ou funcionário dono deste registro. */
+  /** Employer or employee id owning this record. */
   empregador_id: string;
-  /** Título principal do trabalho realizado. */
+  /** Main title of the work performed. */
   titulo: string;
-  /** ID do projeto associado ao trabalho. */
+  /** Project id associated with the work. */
   idprojeto?: string | null;
-  /** Categoria visual (ícone) do trabalho (ex: 'pencil', 'people', 'clipboard'). */
+  /** Visual category (icon) for the work (e.g., 'pencil', 'people', 'clipboard'). */
   categoria?: string;
-  /** Descrição textual do trabalho. */
+  /** Text description of the work. */
   descricao?: string;
-  /** Duração em formato interval retornado pelo backend/Supabase. */
+  /** Duration in interval format returned by backend/Supabase. */
   duracao?: string | null;
-  /** Data e hora de criação do registro no banco. */
+  /** Record creation timestamp. */
   criado_em: string;
 }
 
@@ -53,11 +53,10 @@ interface UsuarioPerfil {
 }
 
 /**
- * Componente principal da Dashboard do Funcionário.
- * Gerencia a exibição e controle do ponto (tracker ao vivo),
- * sumário semanal de horas e o CRUD de registros de trabalho.
- * 
- * @returns {JSX.Element} A interface da tela de funcionário.
+ * Main employee dashboard component.
+ * Manages time tracking, weekly hour summary, and work record CRUD.
+ *
+ * @returns {JSX.Element} Employee dashboard UI.
  */
 export default function FuncionarioDashboard() {
 
@@ -65,7 +64,7 @@ export default function FuncionarioDashboard() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
-  // Sistema de Toasts para feedback visual
+  // Toast system for visual feedback
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   const showPopup = (message: string, type: 'success' | 'error' = 'success') => {
@@ -73,7 +72,7 @@ export default function FuncionarioDashboard() {
     setTimeout(() => setToast(null), 3500);
   };
 
-  // Estados dos Trabalhos e Modal
+  // Work and modal state
   const [activeModal, setActiveModal] = useState<'none' | 'new' | 'edit' | 'delete'>('none');
   const [trabalhos, setTrabalhos] = useState<Trabalho[]>([]);
   const [projetos, setProjetos] = useState<Projeto[]>([]);
@@ -133,7 +132,7 @@ export default function FuncionarioDashboard() {
           return;
         }
 
-        // Se tem empresa mas está pendente, bloqueia o acesso
+        // If a company is set but pending, block access
         if (usuario?.pendente) {
           setIsPendingApproval(true);
           return;
@@ -175,7 +174,7 @@ export default function FuncionarioDashboard() {
     return () => window.clearInterval(intervalId);
   }, [timerStartedAt]);
 
-  // Polling: verifica periodicamente se o usuário foi aprovado
+  // Polling: periodically check whether the user was approved
   useEffect(() => {
     if (!isPendingApproval || !pendingProfile?.id) return;
 
@@ -185,7 +184,7 @@ export default function FuncionarioDashboard() {
         const usuarioAtual = usuarios.find((u: any) => u.id === pendingProfile.id);
 
         if (usuarioAtual && !usuarioAtual.pendente) {
-          // Aprovado! Recarrega os dados e libera o dashboard
+          // Approved! Reload data and unlock the dashboard
           setIsPendingApproval(false);
           setPendingProfile(usuarioAtual);
           const appUser = { ...user, perfil: usuarioAtual, idempresa: usuarioAtual.idempresa };
@@ -199,17 +198,17 @@ export default function FuncionarioDashboard() {
       }
     };
 
-    // Verifica imediatamente ao entrar na tela
+    // Check immediately on entering the screen
     checkApproval();
 
-    const intervalId = window.setInterval(checkApproval, 15000); // a cada 15 segundos
+    const intervalId = window.setInterval(checkApproval, 15000); // every 15 seconds
 
     return () => window.clearInterval(intervalId);
   }, [isPendingApproval, pendingProfile?.id]);
 
   /**
-   * Busca e filtra todos os trabalhos associados ao ID do usuário atual.
-   * @param {string} userId O ID único do usuário autenticado.
+   * Fetch and filter all work records associated with the current user id.
+   * @param {string} userId Authenticated user id.
    */
   const fetchTrabalhos = async (userId: string) => {
     try {
@@ -378,10 +377,10 @@ export default function FuncionarioDashboard() {
   };
 
   /**
-   * Formata a duração em milissegundos para uma string humanamente legível.
-   * Ex: 2h 30m ou apenas 45m.
-   * @param {number} ms Duração total em milissegundos.
-   * @returns {string} String formatada com horas e minutos.
+   * Format a duration in milliseconds into a human-readable string.
+   * Example: 2h 30m or 45m.
+   * @param {number} ms Total duration in milliseconds.
+   * @returns {string} Formatted string with hours and minutes.
    */
   const formatDuration = (ms: number) => {
     if (ms === 0) return '--';
@@ -400,15 +399,15 @@ export default function FuncionarioDashboard() {
   const currentTimeSpan = formatMsAsClock(elapsedMs);
 
   /**
-   * Retorna placeholder enquanto o registro de expediente não existir no schema atual.
-   * @returns {string} String com o horário de entrada formatado ou '--:--' caso não haja registro.
+   * Return a placeholder while no time entry exists in the current schema.
+   * @returns {string} Formatted entry time or '--:--' when missing.
    */
   const formatEntryTime = () => {
     if (!timerStartedAt) return '--:--';
     return new Date(timerStartedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   };
 
-  // Filtra trabalhos pelo período selecionado na listagem
+  // Filter jobs by the selected period in the list
   const trabalhosFiltrados = React.useMemo(() => {
     const [yearStr, monthStr] = listPeriod.split('-');
     const filterYear = parseInt(yearStr, 10);
@@ -430,9 +429,9 @@ export default function FuncionarioDashboard() {
   };
 
   /**
-   * Abre o modal e configura os dados do formulário dependendo da ação (novo, editar, deletar).
-   * @param {'new' | 'edit' | 'delete'} type O tipo de modal a ser aberto.
-   * @param {Trabalho} [trabalho] Os dados do trabalho, caso seja uma edição ou exclusão.
+   * Open the modal and set form data based on the action (new, edit, delete).
+   * @param {'new' | 'edit' | 'delete'} type Modal type to open.
+   * @param {Trabalho} [trabalho] Work data when editing or deleting.
    */
   const openModal = (type: 'new' | 'edit' | 'delete', trabalho?: Trabalho, duracaoInicial = '') => {
     if (trabalho) setSelectedTrabalho(trabalho);
@@ -450,7 +449,7 @@ export default function FuncionarioDashboard() {
   };
 
   /**
-   * Fecha o modal ativo e reseta os estados associados.
+   * Close the active modal and reset related state.
    */
   const closeModal = () => {
     setActiveModal('none');
@@ -458,8 +457,8 @@ export default function FuncionarioDashboard() {
   };
 
   /**
-   * Realiza a criação de um novo registro de trabalho.
-   * Utiliza os dados preenchidos no modal e envia via POST para a API.
+   * Create a new work record.
+   * Uses modal data and sends a POST request to the API.
    */
   const handleCreateWork = async () => {
     setLoading(true);
@@ -483,8 +482,8 @@ export default function FuncionarioDashboard() {
   };
 
   /**
-   * Realiza a atualização de um registro de trabalho existente.
-   * Utiliza o ID do trabalho selecionado e envia os novos dados via PUT para a API.
+   * Update an existing work record.
+   * Uses the selected work id and sends a PUT request to the API.
    */
   const handleUpdateWork = async () => {
     if (!selectedTrabalho) return;
@@ -508,8 +507,8 @@ export default function FuncionarioDashboard() {
   };
 
   /**
-   * Deleta o registro de trabalho previamente selecionado.
-   * Envia uma requisição DELETE para a API.
+   * Delete the selected work record.
+   * Sends a DELETE request to the API.
    */
   const handleDeleteWork = async () => {
     if (!selectedTrabalho) return;
@@ -527,7 +526,7 @@ export default function FuncionarioDashboard() {
   };
 
   /**
-   * Desloga o usuário atual através da API do Supabase e limpa os dados locais.
+   * Sign out the current user via Supabase and clear local data.
    */
   const handleLogout = async () => {
     if (!supabase) return;
@@ -535,9 +534,9 @@ export default function FuncionarioDashboard() {
   };
 
   /**
-   * Retorna o SVG correto dependendo da categoria definida.
-   * @param {string} categoria O tipo/nome da categoria do trabalho.
-   * @returns {JSX.Element} Ícone SVG correspondente.
+   * Return the correct SVG based on the selected category.
+   * @param {string} categoria Category name for the work.
+   * @returns {JSX.Element} Matching SVG icon.
    */
   const getCategoryIcon = (categoria: string) => {
     switch (categoria) {
@@ -552,7 +551,7 @@ export default function FuncionarioDashboard() {
 
   if (!user) return <p style={{ padding: '40px', textAlign: 'center' }}>Carregando perfil...</p>;
 
-  // Tela de bloqueio para usuários pendentes
+  // Lock screen for pending users
   if (isPendingApproval) {
     return (
       <PendingApproval
@@ -565,7 +564,7 @@ export default function FuncionarioDashboard() {
   return (
     <div className={local.layout}>
       
-      {/* Feedback Toast */}
+      {/* Toast feedback */}
       {toast && (
         <div style={{
           position: 'fixed', top: '24px', right: '24px', zIndex: 9999,
@@ -588,7 +587,7 @@ export default function FuncionarioDashboard() {
         themeColor="#3A7AFE"
       />
 
-      {/* Conteúdo Principal */}
+      {/* Main content */}
       <main className={`${local.main} ${sidebarExpanded ? '' : local.sidebarCollapsed}`}>          <div className={local.exportRow}>
             <PeriodFilter period={exportPeriod} onChange={setExportPeriod} />
             <button className={local.exportBtn} onClick={() => {
@@ -646,7 +645,7 @@ export default function FuncionarioDashboard() {
           </div>
         </div>
 
-        {/* Registros de Trabalho */}
+        {/* Work records */}
         <div className={local.sectionHeader}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             <h2 className={local.sectionTitle}>Registros de Trabalho</h2>
@@ -658,7 +657,7 @@ export default function FuncionarioDashboard() {
           </button>
         </div>
 
-        {/* Resumo do período filtrado */}
+        {/* Filtered period summary */}
         {trabalhosFiltrados.length > 0 && (
           <div className={local.periodSummary}>
             <div className={local.summaryItem}>
@@ -718,7 +717,7 @@ export default function FuncionarioDashboard() {
           )}
         </div>
 
-        {/* Sumário Semanal Dinâmico */}
+        {/* Weekly summary */}
         <div className={local.summaryCard}>
           <div className={local.summaryHeader}>
             <h3>Sumário semanal</h3>
@@ -740,7 +739,7 @@ export default function FuncionarioDashboard() {
         </div>
       </main>
 
-      {/* MODAL EXATO: NOVO / EDITAR */}
+      {/* MODAL: NEW / EDIT */}
       {(activeModal === 'new' || activeModal === 'edit') && (
         <div className={local.modalOverlay} onClick={closeModal}>
           <div className={local.modalContent} onClick={e => e.stopPropagation()}>
@@ -844,7 +843,7 @@ export default function FuncionarioDashboard() {
         </div>
       )}
 
-      {/* MODAL EXATO: DELETAR */}
+      {/* MODAL: DELETE */}
       {activeModal === 'delete' && (
         <div className={local.modalOverlay} onClick={closeModal}>
           <div className={local.deleteModalContent} onClick={e => e.stopPropagation()}>
