@@ -1,6 +1,6 @@
 # ⏱️ Pontuará
 
-![Status do Projeto](https://img.shields.io/badge/Status-Em%20Desenvolvimento-purple)
+![Status do Projeto](https://img.shields.io/badge/Status-Em%20Testes-yellow)
 ![Stack](https://img.shields.io/badge/Stack-Web-blue)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
