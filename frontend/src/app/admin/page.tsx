@@ -7,6 +7,9 @@ import { api } from '@/services/api';
 import Sidebar from '@/components/sidebar/Sidebar';
 import { exportTrabalhosCSV } from '@/services/csv';
 import PeriodFilter from '@/components/periodFilter/PeriodFilter';
+import BadgeSelector from '@/components/badgeSelector/BadgeSelector';
+import { ICONS_DATA, COLORS_DATA, encodeProjetoBadget, decodeProjetoBadget } from '@/utils/badgeData';
+import { Users, Clock, Timer, ClipboardList } from 'lucide-react';
 import local from './admin.module.css';
 
 interface Projeto {
@@ -47,38 +50,6 @@ interface IndividualData {
 }
 
 const PROJECT_COLORS = ['#2563EB', '#14B8A6', '#F97316', '#8B5CF6', '#EC4899', '#22C55E', '#0EA5E9', '#F59E0B'];
-const BADGET_OPTIONS = [
-  { value: '1', icon: 'Compasso', label: 'Compasso' },
-  { value: '2', icon: 'Raio', label: 'Raio' },
-  { value: '3', icon: 'Modelos', label: 'Modelos' },
-  { value: '4', icon: 'Seguro', label: 'Seguro' },
-  { value: '5', icon: 'ativos', label: 'Ativos' },
-  { value: '6', icon: 'horastotais', label: 'Horas' },
-  { value: '7', icon: 'pendenteslista', label: 'Pendentes' },
-  { value: '8', icon: 'tarefasraio', label: 'Tarefas' },
-  { value: '9', icon: 'tempograficos', label: 'Tempo' },
-  { value: '10', icon: 'horasind', label: 'Individual' },
-  { value: '11', icon: 'check', label: 'Check' },
-  { value: '12', icon: 'camera', label: 'Camera' },
-  { value: '13', icon: 'profile', label: 'Perfil' },
-  { value: '14', icon: 'copy', label: 'Copia' },
-  { value: '15', icon: 'setacad', label: 'Seta' },
-  { value: '16', icon: 'back', label: 'Voltar' },
-  { value: '17', icon: 'aceitar', label: 'Aceitar' },
-  { value: '18', icon: 'recusar', label: 'Recusar' },
-  { value: '19', icon: 'Google', label: 'Google' },
-  { value: '20', icon: 'Logo', label: 'Logo' },
-];
-const BADGET_COLORS = [
-  { value: '1', color: '#2563EB', label: 'Azul' },
-  { value: '2', color: '#14B8A6', label: 'Verde agua' },
-  { value: '3', color: '#F97316', label: 'Laranja' },
-  { value: '4', color: '#8B5CF6', label: 'Violeta' },
-  { value: '5', color: '#EC4899', label: 'Rosa' },
-  { value: '6', color: '#22C55E', label: 'Verde' },
-  { value: '7', color: '#0F172A', label: 'Grafite' },
-  { value: '8', color: '#F59E0B', label: 'Amarelo' },
-];
 
 /**
  * Admin dashboard page for employers.
@@ -98,7 +69,7 @@ export default function AdminDashboard() {
 
   // Modals
   const [activeModal, setActiveModal] = useState<'none' | 'new' | 'edit' | 'delete' | 'indivDetails'>('none');
-  const [formData, setFormData] = useState({ titulo: '', descricao: '', badgets: BADGET_OPTIONS[0].value, badgetColor: BADGET_COLORS[0].value });
+  const [formData, setFormData] = useState({ titulo: '', descricao: '', badgets: ICONS_DATA[0].id, badgetColor: COLORS_DATA[0].id });
   const [projetos, setProjetos] = useState<Projeto[]>([]);
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [trabalhos, setTrabalhos] = useState<Trabalho[]>([]);
@@ -168,10 +139,10 @@ export default function AdminDashboard() {
     if (proj && type === 'edit') {
       const badget = getProjetoBadget(proj.badgets);
       setSelectedProjeto(proj);
-      setFormData({ titulo: proj.titulo, descricao: proj.descricao || '', badgets: badget.value, badgetColor: badget.colorValue });
+      setFormData({ titulo: proj.titulo, descricao: proj.descricao || '', badgets: badget.icon.id, badgetColor: badget.color.id });
     } else if (type === 'new') {
       setSelectedProjeto(null);
-      setFormData({ titulo: '', descricao: '', badgets: BADGET_OPTIONS[0].value, badgetColor: BADGET_COLORS[0].value });
+      setFormData({ titulo: '', descricao: '', badgets: ICONS_DATA[0].id, badgetColor: COLORS_DATA[0].id });
     } else if (proj && type === 'delete') {
       setSelectedProjeto(proj);
     }
@@ -184,17 +155,11 @@ export default function AdminDashboard() {
   };
 
   const getProjetoBadget = (badgets?: string | number | null) => {
-    const numericBadget = Number(badgets);
-    const badgeValue = numericBadget >= 100 ? String(Math.floor(numericBadget / 100)) : String(numericBadget || BADGET_OPTIONS[0].value);
-    const colorValue = numericBadget >= 100 ? String(numericBadget % 100) : BADGET_COLORS[0].value;
-    const option = BADGET_OPTIONS.find((item) => item.value === badgeValue) || BADGET_OPTIONS[0];
-    const color = BADGET_COLORS.find((item) => item.value === colorValue) || BADGET_COLORS[0];
-
-    return { ...option, color: color.color, colorValue: color.value };
+    return decodeProjetoBadget(badgets);
   };
 
   const encodeBadget = () => {
-    return Number(formData.badgets) * 100 + Number(formData.badgetColor);
+    return encodeProjetoBadget(Number(formData.badgets), Number(formData.badgetColor));
   };
 
   const fetchDashboardData = async (idempresa?: string | null) => {
@@ -399,22 +364,6 @@ export default function AdminDashboard() {
   });
   const currentIndiv = individualData[indivIndex] || null;
 
-  // Render icons from SVGs in public/images.
-  const renderProjectIcon = (iconStr: string, size = 24, isProject = false, color?: string) => {
-    return (
-      <div
-        className={local.svgMask}
-        style={{
-          mask: `url(/images/${iconStr}.svg) no-repeat center / contain`,
-          WebkitMask: `url(/images/${iconStr}.svg) no-repeat center / contain`,
-          width: size,
-          height: size,
-          backgroundColor: color || (isProject ? '#7e8591' : '#3A7AFE')
-        }}
-      />
-    );
-  };
-
   return (
     <div className={local.layout}>
       <Sidebar
@@ -447,8 +396,8 @@ export default function AdminDashboard() {
         <div className={local.topCards}>
           <div className={local.statCard}>
             <div className={local.cardHeader}>
-              <div className={local.cardIcon}>
-                {renderProjectIcon('ativos', 20)}
+              <div className={local.cardIcon} style={{ color: '#3A7AFE', display: 'flex', alignItems: 'center' }}>
+                <Users size={20} />
               </div>
             </div>
             <div className={local.cardTitle}>Colaboradores Ativos</div>
@@ -457,8 +406,8 @@ export default function AdminDashboard() {
 
           <div className={local.statCard}>
             <div className={local.cardHeader}>
-              <div className={local.cardIcon}>
-                {renderProjectIcon('horastotais', 20)}
+              <div className={local.cardIcon} style={{ color: '#3A7AFE', display: 'flex', alignItems: 'center' }}>
+                <Clock size={20} />
               </div>
             </div>
             <div className={local.cardTitle}>Horas Mensais Totais</div>
@@ -467,8 +416,8 @@ export default function AdminDashboard() {
 
           <div className={local.statCard}>
             <div className={local.cardHeader}>
-              <div className={local.cardIcon}>
-                {renderProjectIcon('tarefasraio', 18)}
+              <div className={local.cardIcon} style={{ color: '#3A7AFE', display: 'flex', alignItems: 'center' }}>
+                <Timer size={18} />
               </div>
             </div>
             <div className={local.cardTitle}>Tempo Médio de Trabalhos Cadastrados</div>
@@ -477,8 +426,8 @@ export default function AdminDashboard() {
 
           <div className={local.statCard}>
             <div className={local.cardHeader}>
-              <div className={local.cardIcon}>
-                {renderProjectIcon('pendenteslista', 20)}
+              <div className={local.cardIcon} style={{ color: '#3A7AFE', display: 'flex', alignItems: 'center' }}>
+                <ClipboardList size={20} />
               </div>
             </div>
             <div className={local.cardTitle}>Aprovações Pendentes</div>
@@ -501,8 +450,12 @@ export default function AdminDashboard() {
           ) : projetos.map(proj => (
             <div key={proj.id} className={local.projectItem}>
               <div className={local.projectLeft}>
-                <div className={local.projectIcon}>
-                  {renderProjectIcon(getProjetoBadget(proj.badgets).icon, 20, true, getProjetoBadget(proj.badgets).color)}
+                <div className={local.projectIcon} style={{ 
+                  color: getProjetoBadget(proj.badgets).color.hex,
+                  background: 'transparent',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}>
+                  {React.createElement(getProjetoBadget(proj.badgets).icon.component, { size: 20 })}
                 </div>
                 <div className={local.projectInfo}>
                   <div className={local.title}>{proj.titulo}</div>
@@ -635,15 +588,15 @@ export default function AdminDashboard() {
 
                 <div className={local.indivStats}>
                   <div className={local.statRow}>
-                    <div className={local.statLabel}>
-                      {renderProjectIcon('tarefasraio', 20)}
+                    <div className={local.statLabel} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <Timer size={20} />
                       Trabalhos
                     </div>
                     <div className={local.statVal}>{currentIndiv.tarefas}</div>
                   </div>
                   <div className={local.statRow}>
-                    <div className={local.statLabel}>
-                      {renderProjectIcon('horasind', 20)}
+                    <div className={local.statLabel} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <Clock size={20} />
                       Horas Trabalhadas
                     </div>
                     <div className={local.statVal}>{formatDuration(currentIndiv.horasMs)}</div>
@@ -733,34 +686,12 @@ export default function AdminDashboard() {
               />
             </div>
 
-            <div className={local.formGroup}>
-              <label className={local.formLabel}>Badgets</label>
-              <div className={local.badgetGrid}>
-                {BADGET_OPTIONS.map((badget) => (
-                  <button
-                    key={badget.value}
-                    type="button"
-                    title={badget.label}
-                    className={`${local.badgetBtn} ${formData.badgets === badget.value ? local.active : ''}`}
-                    onClick={() => setFormData({ ...formData, badgets: badget.value })}
-                  >
-                    {renderProjectIcon(badget.icon, 18, true, BADGET_COLORS.find((color) => color.value === formData.badgetColor)?.color)}
-                  </button>
-                ))}
-              </div>
-              <div className={local.badgetColorRow}>
-                {BADGET_COLORS.map((color) => (
-                  <button
-                    key={color.value}
-                    type="button"
-                    title={color.label}
-                    className={`${local.colorDot} ${formData.badgetColor === color.value ? local.active : ''}`}
-                    style={{ backgroundColor: color.color }}
-                    onClick={() => setFormData({ ...formData, badgetColor: color.value })}
-                  />
-                ))}
-              </div>
-            </div>
+            <BadgeSelector
+              selectedIconId={Number(formData.badgets)}
+              selectedColorId={Number(formData.badgetColor)}
+              onIconChange={(id) => setFormData({ ...formData, badgets: id })}
+              onColorChange={(id) => setFormData({ ...formData, badgetColor: id })}
+            />
 
             <button
               className={local.modalActionBtn}
@@ -810,15 +741,15 @@ export default function AdminDashboard() {
 
             <div className={local.indivStats}>
               <div className={local.statRow}>
-                <div className={local.statLabel}>
-                  {renderProjectIcon('tarefasraio', 20)}
+                <div className={local.statLabel} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Timer size={20} />
                   Trabalhos
                 </div>
                 <div className={local.statVal}>{currentIndiv.tarefas}</div>
               </div>
               <div className={local.statRow}>
-                <div className={local.statLabel}>
-                  {renderProjectIcon('horasind', 20)}
+                <div className={local.statLabel} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Clock size={20} />
                   Horas Trabalhadas
                 </div>
                 <div className={local.statVal}>{formatDuration(currentIndiv.horasMs)}</div>
@@ -835,8 +766,8 @@ export default function AdminDashboard() {
                 return (
                 <div key={trabalho.id} className={local.projectItem} style={{ padding: '12px 16px' }}>
                   <div className={local.projectLeft}>
-                    <div className={local.projectIcon} style={{ width: 32, height: 32 }}>
-                      {renderProjectIcon(getProjetoBadget(projeto?.badgets).icon, 16, true, getProjetoBadget(projeto?.badgets).color)}
+                    <div className={local.projectIcon} style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'transparent', color: getProjetoBadget(projeto?.badgets).color.hex }}>
+                      {React.createElement(getProjetoBadget(projeto?.badgets).icon.component, { size: 16 })}
                     </div>
                     <div className={local.projectInfo}>
                       <div className={local.title}>{trabalho.titulo}</div>

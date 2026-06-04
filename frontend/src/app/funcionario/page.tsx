@@ -9,6 +9,8 @@ import { exportTrabalhosCSV } from '@/services/csv';
 import PeriodFilter from '@/components/periodFilter/PeriodFilter';
 import PendingApproval from '@/components/pendingApproval/PendingApproval';
 import Sidebar from '@/components/sidebar/Sidebar';
+import BadgeSelector from '@/components/badgeSelector/BadgeSelector';
+import { ICONS_DATA, COLORS_DATA, encodeTrabalhoCategoria, decodeTrabalhoCategoria } from '@/utils/badgeData';
 
 // Types aligned with the database and backend
 /**
@@ -77,7 +79,14 @@ export default function FuncionarioDashboard() {
   const [trabalhos, setTrabalhos] = useState<Trabalho[]>([]);
   const [projetos, setProjetos] = useState<Projeto[]>([]);
   const [selectedTrabalho, setSelectedTrabalho] = useState<Trabalho | null>(null);
-  const [formData, setFormData] = useState({ titulo: '', descricao: '', idprojeto: '', duracao: '', categoria: 'clipboard' });
+  const [formData, setFormData] = useState({ 
+    titulo: '', 
+    descricao: '', 
+    idprojeto: '', 
+    duracao: '', 
+    categoriaIconName: ICONS_DATA[0].name,
+    categoriaColorHex: COLORS_DATA[0].hex,
+  });
 
   const [timerStartedAt, setTimerStartedAt] = useState<number | null>(null);
   const [elapsedMs, setElapsedMs] = useState(0);
@@ -435,14 +444,23 @@ export default function FuncionarioDashboard() {
    */
   const openModal = (type: 'new' | 'edit' | 'delete', trabalho?: Trabalho, duracaoInicial = '') => {
     if (trabalho) setSelectedTrabalho(trabalho);
-    if (type === 'new') setFormData({ titulo: '', descricao: '', idprojeto: '', duracao: duracaoInicial, categoria: 'clipboard' });
+    if (type === 'new') setFormData({ 
+      titulo: '', 
+      descricao: '', 
+      idprojeto: '', 
+      duracao: duracaoInicial, 
+      categoriaIconName: ICONS_DATA[0].name,
+      categoriaColorHex: COLORS_DATA[0].hex
+    });
     if (type === 'edit' && trabalho) {
+      const decoded = decodeTrabalhoCategoria(trabalho.categoria);
       setFormData({ 
         titulo: trabalho.titulo, 
         descricao: trabalho.descricao || '',
         idprojeto: trabalho.idprojeto || '',
         duracao: formatIntervalForInput(trabalho.duracao),
-        categoria: trabalho.categoria || 'clipboard', 
+        categoriaIconName: decoded.icon.name,
+        categoriaColorHex: decoded.color,
       });
     }
     setActiveModal(type);
@@ -468,7 +486,7 @@ export default function FuncionarioDashboard() {
         titulo: formData.titulo,
         descricao: formData.descricao,
         idprojeto: formData.idprojeto || undefined,
-        categoria: formData.categoria,
+        categoria: encodeTrabalhoCategoria(formData.categoriaIconName, formData.categoriaColorHex),
         duracao: formatIntervalForApi(formData.duracao),
       });
       await fetchTrabalhos(user.id);
@@ -493,7 +511,7 @@ export default function FuncionarioDashboard() {
         titulo: formData.titulo,
         descricao: formData.descricao,
         idprojeto: formData.idprojeto || null,
-        categoria: formData.categoria,
+        categoria: encodeTrabalhoCategoria(formData.categoriaIconName, formData.categoriaColorHex),
         duracao: formatIntervalForApi(formData.duracao) || null,
       });
       await fetchTrabalhos(user.id);
@@ -533,20 +551,9 @@ export default function FuncionarioDashboard() {
     await supabase.auth.signOut();
   };
 
-  /**
-   * Return the correct SVG based on the selected category.
-   * @param {string} categoria Category name for the work.
-   * @returns {JSX.Element} Matching SVG icon.
-   */
-  const getCategoryIcon = (categoria: string) => {
-    switch (categoria) {
-      case 'pencil':
-        return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3A7AFE" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>;
-      case 'people':
-        return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>;
-      default: // clipboard
-        return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#A6651E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path></svg>;
-    }
+  const renderCategoryIcon = (categoria?: string) => {
+    const { icon, color } = decodeTrabalhoCategoria(categoria);
+    return React.createElement(icon.component, { size: 18, style: { color } });
   };
 
   if (!user) return <p style={{ padding: '40px', textAlign: 'center' }}>Carregando perfil...</p>;
@@ -690,8 +697,8 @@ export default function FuncionarioDashboard() {
             trabalhosFiltrados.map((trab) => (
               <div key={trab.id} className={local.workItem}>
                 <div className={local.itemLeft}>
-                  <div className={local.itemIcon}>
-                    {getCategoryIcon(trab.categoria || 'clipboard')}
+                  <div className={local.itemIcon} style={{ background: 'transparent' }}>
+                    {renderCategoryIcon(trab.categoria)}
                   </div>
                   <div className={local.itemInfo}>
                     <div className={local.title}>{trab.titulo}</div>
@@ -805,32 +812,12 @@ export default function FuncionarioDashboard() {
               </div>
             </div>
 
-            <div className={local.formGroup}>
-              <label className={local.formLabel}>Categoria</label>
-              <div className={local.projectTypes}>
-                  <button 
-                    type="button"
-                    className={`${local.typeBtn} ${formData.categoria === 'clipboard' ? local.active : ''}`}
-                    onClick={() => setFormData({...formData, categoria: 'clipboard'})}
-                  >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path></svg>
-                  </button>
-                  <button 
-                    type="button"
-                    className={`${local.typeBtn} ${formData.categoria === 'pencil' ? local.active : ''}`}
-                    onClick={() => setFormData({...formData, categoria: 'pencil'})}
-                  >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
-                  </button>
-                  <button 
-                    type="button"
-                    className={`${local.typeBtn} ${formData.categoria === 'people' ? local.active : ''}`}
-                    onClick={() => setFormData({...formData, categoria: 'people'})}
-                  >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-                  </button>
-                </div>
-            </div>
+            <BadgeSelector
+              selectedIconName={formData.categoriaIconName}
+              selectedColorHex={formData.categoriaColorHex}
+              onIconChange={(id, name) => setFormData({ ...formData, categoriaIconName: name })}
+              onColorChange={(id, hex) => setFormData({ ...formData, categoriaColorHex: hex })}
+            />
 
             <button 
               className={local.modalActionBtn} 

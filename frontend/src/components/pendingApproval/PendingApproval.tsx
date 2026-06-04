@@ -32,40 +32,47 @@ export default function PendingApproval({ userName, onLogout }: PendingApprovalP
         boxShadow: '0 12px 40px rgba(0, 0, 0, 0.08)',
         animation: 'fadeInUp 0.5s ease-out',
       }}>
-        {/* Logo */}
+        {/* Header with Logo and Clock */}
         <div style={{
-          width: '80px',
-          height: '80px',
-          margin: '0 auto 24px auto',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: '#F3F4F5',
-          borderRadius: '20px',
-          padding: '16px',
+          position: 'relative',
+          marginBottom: '32px',
+          minHeight: '56px'
         }}>
-          <img
-            src="/images/Logo.svg"
-            alt="Ponturá"
-            style={{ width: '100%', height: '100%' }}
-          />
-        </div>
+          {/* Logo at top-left */}
+          <div style={{
+            position: 'absolute',
+            left: 0,
+            width: '42px',
+            height: '42px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            {/* <img
+              src="/images/Logo.svg"
+              alt="Ponturá"
+              style={{ width: '100%', height: '100%' }}
+            /> */}
+          </div>
 
-        {/* Clock/wait icon */}
-        <div style={{
-          width: '56px',
-          height: '56px',
-          margin: '0 auto 20px auto',
-          backgroundColor: '#FFF3E0',
-          borderRadius: '50%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}>
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="10"></circle>
-            <polyline points="12 6 12 12 16 14"></polyline>
-          </svg>
+          {/* Clock icon (centered) */}
+          <div style={{
+            width: '56px',
+            height: '56px',
+            backgroundColor: '#FFF3E0',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+          </div>
         </div>
 
         {/* Title */}
@@ -73,9 +80,9 @@ export default function PendingApproval({ userName, onLogout }: PendingApprovalP
           fontSize: '22px',
           fontWeight: 800,
           color: '#191c1d',
-          margin: '0 0 8px 0',
+          margin: '0 0 12px 0',
         }}>
-          Esperando ser Aceito
+          Esperando ser aceito!
         </h1>
 
         {/* Subtitle */}
@@ -83,17 +90,9 @@ export default function PendingApproval({ userName, onLogout }: PendingApprovalP
           fontSize: '14px',
           color: '#6b7280',
           lineHeight: 1.6,
-          margin: '0 0 8px 0',
-        }}>
-          {userName ? `${userName}, sua` : 'Sua'} conta foi vinculada à empresa e está aguardando aprovação do administrador.
-        </p>
-        <p style={{
-          fontSize: '14px',
-          color: '#6b7280',
-          lineHeight: 1.6,
           margin: '0 0 32px 0',
         }}>
-          Assim que for aprovado, você receberá acesso ao sistema de ponto eletrônico.
+          Assim que aprovado, você terá acesso<br/>total ao sistema de ponto eletrônico.
         </p>
 
         {/* Auto-check indicator */}
@@ -113,7 +112,7 @@ export default function PendingApproval({ userName, onLogout }: PendingApprovalP
             backgroundColor: '#F97316',
             animation: 'pulse 2s ease-in-out infinite',
           }}></span>
-          Verificando aprovação automaticamente...
+          Você poderá desfrutar do Pontuará em breve...
         </div>
 
         {/* Logout button */}
@@ -152,7 +151,7 @@ export default function PendingApproval({ userName, onLogout }: PendingApprovalP
       </div>
 
       <style>{`
-        @keyframes fadeInUp {\n          from {\n            opacity: 0;\n            transform: translateY(20px);\n          }\n          to {\n            opacity: 1;\n            transform: translateY(0);\n          }\n        }\n        @keyframes pulse {\n          0%, 100% { opacity: 1; }\n          50% { opacity: 0.4; }
+        @keyframes fadeInUp {
           from {
             opacity: 0;
             transform: translateY(20px);
@@ -161,6 +160,10 @@ export default function PendingApproval({ userName, onLogout }: PendingApprovalP
             opacity: 1;
             transform: translateY(0);
           }
+        }
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.3; }
         }
       `}</style>
     </div>
