@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { api } from '@/services/api';
+import { Copy, Check } from 'lucide-react';
 import local from './sidebar.module.css';
 
 interface SidebarProps {
@@ -26,6 +27,7 @@ export default function Sidebar({
 }: SidebarProps) {
   const [showCodeModal, setShowCodeModal] = useState(false);
   const [companyCode, setCompanyCode] = useState('Código indisponível');
+  const [isCopied, setIsCopied] = useState(false);
   
   useEffect(() => {
     const fetchCompanyCode = async () => {
@@ -55,8 +57,8 @@ export default function Sidebar({
   const copyToClipboard = () => {
     if (companyCode === 'Código indisponível') return;
     navigator.clipboard.writeText(companyCode);
-    // A toast could be used here, but a simple alert keeps it focused
-    alert('Código copiado para a área de transferência!');
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000);
   };
 
   return (
@@ -127,8 +129,17 @@ export default function Sidebar({
             
             <div className={local.codeContainer}>
               <span className={local.codeValue}>{companyCode}</span>
-              <button onClick={copyToClipboard} className={local.copyBtn} title="Copiar código" type="button">
-                <img src="/images/copy.svg" alt="Copiar" className={local.copyIcon} />
+              <button 
+                onClick={copyToClipboard} 
+                className={`${local.copyBtn} ${isCopied ? local.copied : ''}`} 
+                title="Copiar código" 
+                type="button"
+                style={{ 
+                  color: isCopied ? '#10B981' : '#6B7280',
+                  backgroundColor: isCopied ? '#D1FAE5' : undefined 
+                }}
+              >
+                {isCopied ? <Check size={20} strokeWidth={2.5} /> : <Copy size={20} />}
               </button>
             </div>
 
