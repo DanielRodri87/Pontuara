@@ -17,17 +17,11 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: https://pontuara.onrender.com
     container_name: pontuara-frontend
-    depends_on:
-      - backend
     environment:
-      WATCHPACK_POLLING: "true"
       NEXT_TELEMETRY_DISABLED: "1"
-      NEXT_PUBLIC_API_URL: http://localhost:7000 # <-- Apontando para o backend na 7000
-    command: npm run dev
     ports:
       - "3000:3000"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
     restart: unless-stopped
