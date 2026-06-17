@@ -36,6 +36,12 @@ class Settings(BaseModel):
     supabase_trabalhos_table: str = "trabalhos"
     supabase_empresas_table: str = "empresas"
     supabase_projetos_table: str = "projetos"
+    cors_allowed_origins: list[str] = Field(
+        default_factory=lambda: [
+            "https://pontuara.vercel.app",
+            "http://localhost:3000",
+        ]
+    )
 
     @property
     def supabase_rest_url(self) -> str | None:
@@ -85,7 +91,22 @@ def get_settings() -> Settings:
         supabase_trabalhos_table=os.getenv("SUPABASE_TRABALHOS_TABLE", "trabalhos"),
         supabase_empresas_table=os.getenv("SUPABASE_EMPRESAS_TABLE", "empresas"),
         supabase_projetos_table=os.getenv("SUPABASE_PROJETOS_TABLE", "projetos"),
+        cors_allowed_origins=_parse_origins(os.getenv("CORS_ALLOWED_ORIGINS")),
     )
+
+
+def _parse_origins(raw: str | None) -> list[str]:
+    """Converte a variável CORS_ALLOWED_ORIGINS (lista separada por vírgula) em lista.
+
+    Args:
+        raw: Valor bruto da variável de ambiente, ou None.
+
+    Returns:
+        list[str]: Origens permitidas; usa o padrão seguro quando não definido.
+    """
+    if not raw:
+        return ["https://pontuara.vercel.app", "http://localhost:3000"]
+    return [origin.strip() for origin in raw.split(",") if origin.strip()]
 
 
 settings = get_settings()

@@ -16,10 +16,11 @@ app = FastAPI(
     version=settings.app_version,
 )
 
-# Configuração de CORS
+# Configuração de CORS — origens restritas (configuráveis via CORS_ALLOWED_ORIGINS).
+# Usar "*" junto de allow_credentials=True é inválido e inseguro.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Em produção, você deve especificar as origens permitidas
+    allow_origins=settings.cors_allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

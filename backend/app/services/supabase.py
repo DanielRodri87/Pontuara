@@ -235,6 +235,50 @@ class SupabaseService:
         if not data:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Registro não encontrado")
 
+    def get_user_from_token(self, access_token: str) -> dict[str, object]:
+        """Valida um access_token junto ao Supabase Auth e retorna o usuário.
+
+        Faz uma chamada a `/auth/v1/user`, que valida assinatura e expiração do
+        token no próprio Supabase. Tokens inválidos/expirados resultam em 401.
+
+        Args:
+            access_token: Token JWT de acesso enviado pelo cliente.
+
+        Returns:
+            dict[str, object]: Dados do usuário autenticado retornados pelo Supabase.
+
+        Raises:
+            HTTPException: 401 quando o token é inválido/expirado; 503/502 em falhas de config/conexão.
+        """
+        if not settings.supabase_url or not settings.supabase_key:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Supabase não configurado.",
+            )
+
+        auth_url = f"{settings.supabase_url.rstrip('/')}/auth/v1/user"
+        headers = {
+            "apikey": settings.supabase_key,
+            "Authorization": f"Bearer {access_token}",
+        }
+
+        try:
+            response = httpx.get(auth_url, headers=headers, timeout=settings.supabase_timeout)
+        except httpx.RequestError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail=f"Não foi possível conectar ao Supabase Auth: {exc}",
+            ) from exc
+
+        if response.status_code >= 400:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token de autenticação inválido ou expirado.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        return response.json()
+
     def login_user(self, email: str, password: str) -> dict[str, object]:
         """Autentica um utilizador através da API Auth do Supabase.
 

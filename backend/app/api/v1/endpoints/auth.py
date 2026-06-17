@@ -158,7 +158,7 @@ def signup(payload: SignupPayload) -> UsuarioRead:
         logger.error(f"Erro inesperado no signup: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Erro ao criar usuário: {str(e)}"
+            detail="Erro interno ao criar usuário. Tente novamente mais tarde."
         )
 
 @router.post("/forgot-password")
