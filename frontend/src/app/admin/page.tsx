@@ -77,14 +77,17 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(false);
 
   // CSV export period
-  const [geralExportPeriod, setGeralExportPeriod] = useState(() => {
+  const defaultDateRange = () => {
     const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  });
-  const [indivExportPeriod, setIndivExportPeriod] = useState(() => {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  });
+    const start = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+    const end = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    return { start, end };
+  };
+  const [geralExportStart, setGeralExportStart] = useState(() => defaultDateRange().start);
+  const [geralExportEnd, setGeralExportEnd] = useState(() => defaultDateRange().end);
+  const [indivExportStart, setIndivExportStart] = useState(() => defaultDateRange().start);
+  const [indivExportEnd, setIndivExportEnd] = useState(() => defaultDateRange().end);
+  const [chartKey, setChartKey] = useState(0);
 
   // Overall chart
   const [chartTab, setChartTab] = useState<'Horas' | 'Produtividade'>('Horas');
@@ -287,18 +290,19 @@ export default function AdminDashboard() {
     return `${hours.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}h`;
   };
 
-  const getWeekDates = () => {
-    const today = new Date();
-    const mondayOffset = today.getDay() === 0 ? -6 : 1 - today.getDay();
-    const weekStart = new Date(today);
-    weekStart.setHours(0, 0, 0, 0);
-    weekStart.setDate(today.getDate() + mondayOffset);
-
-    return Array.from({ length: 7 }, (_, index) => {
-      const date = new Date(weekStart);
-      date.setDate(weekStart.getDate() + index);
-      return date;
-    });
+  const getRangeDates = (startStr: string, endStr: string): Date[] => {
+    const [sy, sm, sd] = startStr.split('-').map(Number);
+    const [ey, em, ed] = endStr.split('-').map(Number);
+    const start = new Date(sy, sm - 1, sd);
+    const end = new Date(ey, em - 1, ed);
+    if (start > end) return [];
+    const result: Date[] = [];
+    const cur = new Date(start);
+    while (cur <= end && result.length < 365) {
+      result.push(new Date(cur));
+      cur.setDate(cur.getDate() + 1);
+    }
+    return result;
   };
 
   const isSameDay = (firstDate: Date, secondDate: Date) => {
@@ -319,27 +323,56 @@ export default function AdminDashboard() {
   const totalMensalMs = trabalhosMes.reduce((total, trabalho) => total + parseIntervalToMs(trabalho.duracao), 0);
   const tempoMedioTrabalhoMs = trabalhos.length ? totalTrabalhosMs / trabalhos.length : 0;
 
-  const weekDates = getWeekDates();
-  const horasPorDia = weekDates.map((date) => {
-    const totalMs = trabalhos.reduce((total, trabalho) => {
-      const trabalhoDate = new Date(trabalho.criado_em);
-      if (!isSameDay(trabalhoDate, date)) return total;
-      return total + parseIntervalToMs(trabalho.duracao);
-    }, 0);
+  const chartDates = getRangeDates(geralExportStart, geralExportEnd);
+  const chartDayCount = chartDates.length;
 
-    return {
-      label: date.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '').toUpperCase(),
-      value: totalMs / (1000 * 60 * 60),
-      color: '#2563EB',
-    };
-  });
+  const horasPorPeriodo: { label: string; value: number; color: string }[] = chartDayCount <= 31
+    ? chartDates.map((date) => {
+        const totalMs = trabalhos.reduce((acc, t) => {
+          if (!isSameDay(new Date(t.criado_em), date)) return acc;
+          return acc + parseIntervalToMs(t.duracao);
+        }, 0);
+        const label = chartDayCount <= 10
+          ? date.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '').toUpperCase()
+          : date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+        return { label, value: totalMs / (1000 * 60 * 60), color: '#2563EB' };
+      })
+    : (() => {
+        const groups: { label: string; value: number; color: string }[] = [];
+        const last = chartDates[chartDates.length - 1];
+        const cur = new Date(chartDates[0]);
+        let n = 1;
+        while (cur <= last) {
+          const wStart = new Date(cur);
+          const wEnd = new Date(cur);
+          wEnd.setDate(wEnd.getDate() + 6);
+          if (wEnd > last) wEnd.setTime(last.getTime());
+          const totalMs = trabalhos.reduce((acc, t) => {
+            const d = new Date(t.criado_em);
+            return d >= wStart && d <= wEnd ? acc + parseIntervalToMs(t.duracao) : acc;
+          }, 0);
+          groups.push({ label: `S${n++}`, value: totalMs / (1000 * 60 * 60), color: '#2563EB' });
+          cur.setDate(cur.getDate() + 7);
+        }
+        return groups;
+      })();
+
+  const geralFilterStart = (() => {
+    const [y, m, d] = geralExportStart.split('-').map(Number);
+    return new Date(y, m - 1, d, 0, 0, 0, 0);
+  })();
+  const geralFilterEnd = (() => {
+    const [y, m, d] = geralExportEnd.split('-').map(Number);
+    return new Date(y, m - 1, d, 23, 59, 59, 999);
+  })();
 
   const horasPorProjeto = projetos.map((projeto, index) => {
-    const totalMs = trabalhos.reduce((total, trabalho) => {
-      if (trabalho.idprojeto !== projeto.id) return total;
-      return total + parseIntervalToMs(trabalho.duracao);
+    const totalMs = trabalhos.reduce((acc, t) => {
+      if (t.idprojeto !== projeto.id) return acc;
+      const d = new Date(t.criado_em);
+      if (d < geralFilterStart || d > geralFilterEnd) return acc;
+      return acc + parseIntervalToMs(t.duracao);
     }, 0);
-
     return {
       label: projeto.titulo,
       value: totalMs / (1000 * 60 * 60),
@@ -347,9 +380,10 @@ export default function AdminDashboard() {
     };
   }).filter((item) => item.value > 0);
 
-  const chartData = chartTab === 'Horas' ? horasPorDia : horasPorProjeto;
+  const chartData = chartTab === 'Horas' ? horasPorPeriodo : horasPorProjeto;
   const maxDataValue = Math.max(...chartData.map((item) => item.value), 1);
   const maxChartValue = Math.ceil((maxDataValue * 1.2) / 5) * 5 || 5;
+  const chartGap = chartData.length <= 7 ? 24 : chartData.length <= 14 ? 12 : 6;
 
   const individualData: IndividualData[] = funcionariosAtivos.map((usuario) => {
     const trabalhosUsuario = trabalhos.filter((trabalho) => trabalho.empregador_id === usuario.id);
@@ -480,15 +514,11 @@ export default function AdminDashboard() {
           <div className={local.geralCard}>
             <div className={local.geralHeader}>
               <h3>Geral</h3>
-              <div className={local.dateNav}>
-                <button><img src="/images/tempograficos.svg" alt="Prev" /></button>
-                <span>
-                  {weekDates[0].toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
-                  {' - '}
-                  {weekDates[6].toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
-                </span>
-                <button><img src="/images/tempograficos.svg" alt="Next" style={{ transform: 'scaleX(-1)' }} /></button>
-              </div>
+              <PeriodFilter
+                startDate={geralExportStart}
+                endDate={geralExportEnd}
+                onChange={(start, end) => { setGeralExportStart(start); setGeralExportEnd(end); setChartKey(k => k + 1); }}
+              />
             </div>
 
             <div className={local.geralControls}>
@@ -498,7 +528,7 @@ export default function AdminDashboard() {
                   <button
                     key={tab}
                     className={`${local.tabBtn} ${chartTab === tab ? local.active : ''}`}
-                    onClick={() => setChartTab(tab)}
+                    onClick={() => { setChartTab(tab); setChartKey(k => k + 1); }}
                   >
                     {tab}
                   </button>
@@ -506,7 +536,7 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            <div className={local.chartContainer}>
+            <div className={local.chartContainer} style={{ gap: chartGap }}>
               <div className={local.yAxis}>
                 <span>{Math.ceil(maxChartValue)}H</span>
                 <span>{Math.ceil(maxChartValue * 0.8)}H</span>
@@ -526,12 +556,16 @@ export default function AdminDashboard() {
 
               {chartData.length === 0 ? (
                 <div className={local.emptyChart}>Nenhuma hora cadastrada para exibir.</div>
-              ) : chartData.map((item) => {
+              ) : chartData.map((item, index) => {
                 const val = item.value;
                 const heightPercent = (val / maxChartValue) * 100;
                 return (
-                  <div key={item.label} className={local.chartBarWrapper}>
-                    <div className={local.chartBar} style={{ height: `${heightPercent}%`, backgroundColor: item.color }} title={`${item.label}: ${val.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}h`}></div>
+                  <div key={`${chartKey}-${index}`} className={local.chartBarWrapper}>
+                    <div
+                      className={local.chartBar}
+                      style={{ height: `${heightPercent}%`, backgroundColor: item.color, animationDelay: `${index * 0.04}s` }}
+                      title={`${item.label}: ${val.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}h`}
+                    />
                     <span className={local.chartLabel}>{item.label}</span>
                   </div>
                 );
@@ -539,16 +573,12 @@ export default function AdminDashboard() {
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: 24 }}>
-              <PeriodFilter period={geralExportPeriod} onChange={setGeralExportPeriod} />
-              <button className={local.btnExportar} style={{ marginTop: 0, width: 'auto', flex: 1 }} onClick={() => {
-              const [yearStr, monthStr] = geralExportPeriod.split('-');
-              const year = parseInt(yearStr, 10);
-              const month = parseInt(monthStr, 10) - 1;
+              <button className={local.btnExportar} style={{ marginTop: 0, width: '100%' }} onClick={() => {
               const getProjNome = (idprojeto?: string | null) => {
                 if (!idprojeto) return 'Sem Projeto';
                 return projetos.find(p => p.id === idprojeto)?.titulo || 'Projeto não encontrado';
               };
-              const exported = exportTrabalhosCSV(trabalhos, getProjNome, 'geral', year, month);
+              const exported = exportTrabalhosCSV(trabalhos, getProjNome, 'geral', geralExportStart, geralExportEnd);
               if (!exported) showToast('Nenhuma tarefa encontrada neste período.', 'error');
             }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
@@ -781,17 +811,18 @@ export default function AdminDashboard() {
               })}
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: 'auto', width: '100%' }}>
-              <PeriodFilter period={indivExportPeriod} onChange={setIndivExportPeriod} />
-              <button className={local.btnExportar} style={{ marginTop: 0, width: 'auto', flex: 1 }} onClick={() => {
-              const [yearStr, monthStr] = indivExportPeriod.split('-');
-              const year = parseInt(yearStr, 10);
-              const month = parseInt(monthStr, 10) - 1;
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: 'auto', width: '100%' }}>
+              <PeriodFilter
+                startDate={indivExportStart}
+                endDate={indivExportEnd}
+                onChange={(start, end) => { setIndivExportStart(start); setIndivExportEnd(end); }}
+              />
+              <button className={local.btnExportar} style={{ marginTop: 0, width: '100%' }} onClick={() => {
               const getProjNome = (idprojeto?: string | null) => {
                 if (!idprojeto) return 'Sem Projeto';
                 return projetos.find(p => p.id === idprojeto)?.titulo || 'Projeto não encontrado';
               };
-              const exported = exportTrabalhosCSV(currentIndiv.trabalhos, getProjNome, `individual-${currentIndiv.usuario.nome}-${currentIndiv.usuario.sobrenome}`, year, month);
+              const exported = exportTrabalhosCSV(currentIndiv.trabalhos, getProjNome, `individual-${currentIndiv.usuario.nome}-${currentIndiv.usuario.sobrenome}`, indivExportStart, indivExportEnd);
               if (!exported) showToast('Nenhuma tarefa encontrada neste período.', 'error');
             }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>

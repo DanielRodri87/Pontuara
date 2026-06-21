@@ -5,6 +5,9 @@ import Navbar from "../components/navbar/Navbar";
 export const metadata: Metadata = {
   title: "Pontuara",
   description: "Sistema de gerenciamento Pontuara",
+  icons: {
+    icon: '/images/LogoColor.svg',
+  },
 };
 
 /**

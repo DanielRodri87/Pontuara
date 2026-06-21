@@ -13,9 +13,6 @@ interface TrabalhoCSV {
   criado_em: string;
 }
 
-/**
- * Format a duration value (interval) into a readable string (e.g., 2h 30m).
- */
 function formatDurationForCSV(value?: string | null): string {
   if (!value) return '--';
 
@@ -29,9 +26,6 @@ function formatDurationForCSV(value?: string | null): string {
   return `${hours}h ${minutes.toString().padStart(2, '0')}m`;
 }
 
-/**
- * Format an ISO date to the Brazilian format (dd/mm/yyyy).
- */
 function formatDateForCSV(dateStr: string): string {
   const date = new Date(dateStr);
   return date.toLocaleDateString('pt-BR', {
@@ -41,9 +35,6 @@ function formatDateForCSV(dateStr: string): string {
   });
 }
 
-/**
- * Generate CSV content from the job list.
- */
 function generateCSVContent(trabalhos: TrabalhoCSV[]): string {
   const header = 'Título;Descrição;Categoria;Projeto;Duração;Data\n';
   const rows = trabalhos.map((t) => {
@@ -60,11 +51,8 @@ function generateCSVContent(trabalhos: TrabalhoCSV[]): string {
   return header + rows.join('\n');
 }
 
-/**
- * Trigger a CSV file download in the browser.
- */
 function downloadCSV(content: string, filename: string): void {
-  const BOM = '\uFEFF';
+  const BOM = '﻿';
   const blob = new Blob([BOM + content], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
 
@@ -77,56 +65,57 @@ function downloadCSV(content: string, filename: string): void {
   URL.revokeObjectURL(url);
 }
 
-/**
- * Check whether a date belongs to the given month and year.
- */
-function isInMonth(date: Date, year: number, month: number): boolean {
-  return date.getFullYear() === year && date.getMonth() === month;
+function parseLocalDate(dateStr: string, endOfDay = false): Date {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const d = new Date(year, month - 1, day);
+  if (endOfDay) d.setHours(23, 59, 59, 999);
+  return d;
+}
+
+function isInDateRange(date: Date, startDateStr: string, endDateStr: string): boolean {
+  const start = parseLocalDate(startDateStr);
+  const end = parseLocalDate(endDateStr, true);
+  return date >= start && date <= end;
 }
 
 /**
- * Return a month label for the filename.
- */
-function monthLabel(month: number): string {
-  return String(month + 1).padStart(2, '0');
-}
-
-/**
- * Export jobs for a specific period (month/year) as CSV.
+ * Export jobs within a date range as CSV.
  *
  * @param trabalhos Full list of jobs.
  * @param getProjetoNome Optional function to map project id to project name.
- * @param prefix Optional filename prefix (e.g., "funcionario").
- * @param year Year filter (optional, defaults to current year).
- * @param month Month filter (optional, defaults to current month, 0-indexed: 0 = January).
+ * @param prefix Optional filename prefix.
+ * @param startDate Start date string "YYYY-MM-DD" (defaults to first day of current month).
+ * @param endDate End date string "YYYY-MM-DD" (defaults to today).
  * @returns `true` when the CSV was generated and downloaded, `false` if there were no tasks.
  */
 export function exportTrabalhosCSV(
   trabalhos: TrabalhoCSV[],
   getProjetoNome?: (idprojeto?: string | null) => string,
   prefix = 'tarefas',
-  year?: number,
-  month?: number,
+  startDate?: string,
+  endDate?: string,
 ): boolean {
   const now = new Date();
-  const filterYear = year ?? now.getFullYear();
-  const filterMonth = month ?? now.getMonth();
+  const defaultStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+  const defaultEnd = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
-  const trabalhosDoMes = trabalhos.filter((t) =>
-    isInMonth(new Date(t.criado_em), filterYear, filterMonth),
+  const start = startDate || defaultStart;
+  const end = endDate || defaultEnd;
+
+  const trabalhosNoPeriodo = trabalhos.filter((t) =>
+    isInDateRange(new Date(t.criado_em), start, end),
   );
 
-  if (trabalhosDoMes.length === 0) {
+  if (trabalhosNoPeriodo.length === 0) {
     return false;
   }
 
-  const enriched = trabalhosDoMes.map((t) => ({
+  const enriched = trabalhosNoPeriodo.map((t) => ({
     ...t,
     projetoNome: getProjetoNome ? getProjetoNome(t.idprojeto) : t.projetoNome,
   }));
 
-  const mesStr = monthLabel(filterMonth);
-  const filename = `${prefix}-${mesStr}-${filterYear}.csv`;
+  const filename = `${prefix}-${start}_a_${end}.csv`;
   const content = generateCSVContent(enriched);
   downloadCSV(content, filename);
   return true;

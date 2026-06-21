@@ -384,12 +384,24 @@
   z-index: 1;
 }
 
+@keyframes barGrow {
+  from {
+    transform: scaleY(0);
+    opacity: 0;
+  }
+  to {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
 .chartBar {
   width: 100%;
   max-width: 60px;
   background-color: #3A7AFE;
   border-radius: 8px 8px 0 0;
-  transition: height 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transform-origin: bottom;
+  animation: barGrow 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
 }
 
 .chartLabel {
