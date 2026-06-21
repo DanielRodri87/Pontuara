@@ -91,14 +91,16 @@ export default function FuncionarioDashboard() {
   const [timerStartedAt, setTimerStartedAt] = useState<number | null>(null);
   const [elapsedMs, setElapsedMs] = useState(0);
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
-  const [exportPeriod, setExportPeriod] = useState(() => {
+  const defaultDateRange = () => {
     const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  });
-  const [listPeriod, setListPeriod] = useState(() => {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  });
+    const start = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+    const end = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    return { start, end };
+  };
+  const [exportStart, setExportStart] = useState(() => defaultDateRange().start);
+  const [exportEnd, setExportEnd] = useState(() => defaultDateRange().end);
+  const [listStart, setListStart] = useState(() => defaultDateRange().start);
+  const [listEnd, setListEnd] = useState(() => defaultDateRange().end);
   const [needsCompanySetup, setNeedsCompanySetup] = useState(false);
   const [isPendingApproval, setIsPendingApproval] = useState(false);
   const [pendingProfile, setPendingProfile] = useState<UsuarioPerfil | null>(null);
@@ -416,16 +418,17 @@ export default function FuncionarioDashboard() {
     return new Date(timerStartedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   };
 
-  // Filter jobs by the selected period in the list
+  // Filter jobs by the selected date range in the list
   const trabalhosFiltrados = React.useMemo(() => {
-    const [yearStr, monthStr] = listPeriod.split('-');
-    const filterYear = parseInt(yearStr, 10);
-    const filterMonth = parseInt(monthStr, 10) - 1; // 0-indexed
+    const [sy, sm, sd] = listStart.split('-').map(Number);
+    const [ey, em, ed] = listEnd.split('-').map(Number);
+    const start = new Date(sy, sm - 1, sd, 0, 0, 0, 0);
+    const end = new Date(ey, em - 1, ed, 23, 59, 59, 999);
     return trabalhos.filter((t) => {
       const d = new Date(t.criado_em);
-      return d.getFullYear() === filterYear && d.getMonth() === filterMonth;
+      return d >= start && d <= end;
     });
-  }, [trabalhos, listPeriod]);
+  }, [trabalhos, listStart, listEnd]);
 
   const getProjetoTitulo = (idprojeto?: string | null) => {
     if (!idprojeto) return 'Sem Projeto';
@@ -596,17 +599,18 @@ export default function FuncionarioDashboard() {
 
       {/* Main content */}
       <main className={`${local.main} ${sidebarExpanded ? '' : local.sidebarCollapsed}`}>          <div className={local.exportRow}>
-            <PeriodFilter period={exportPeriod} onChange={setExportPeriod} />
+            <PeriodFilter
+              startDate={exportStart}
+              endDate={exportEnd}
+              onChange={(start, end) => { setExportStart(start); setExportEnd(end); }}
+            />
             <button className={local.exportBtn} onClick={() => {
-              const [yearStr, monthStr] = exportPeriod.split('-');
-              const year = parseInt(yearStr, 10);
-              const month = parseInt(monthStr, 10) - 1; // 0-indexed
-              const exported = exportTrabalhosCSV(trabalhos, getProjetoTitulo, 'funcionario', year, month);
+              const exported = exportTrabalhosCSV(trabalhos, getProjetoTitulo, 'funcionario', exportStart, exportEnd);
               if (!exported) showPopup('Nenhuma tarefa encontrada neste período.', 'error');
             }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-          Exportar CSV
-        </button>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+              Exportar CSV
+            </button>
           </div>
 
         <div className={local.topWidgets}>
@@ -654,9 +658,13 @@ export default function FuncionarioDashboard() {
 
         {/* Work records */}
         <div className={local.sectionHeader}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
             <h2 className={local.sectionTitle}>Registros de Trabalho</h2>
-            <PeriodFilter period={listPeriod} onChange={setListPeriod} />
+            <PeriodFilter
+              startDate={listStart}
+              endDate={listEnd}
+              onChange={(start, end) => { setListStart(start); setListEnd(end); }}
+            />
           </div>
           <button className={local.btnNovoTrabalho} onClick={() => openModal('new')}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
