@@ -13,4 +13,6 @@ RUN if [ -f requirements.txt ]; then \
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "if python -c 'import uvicorn' >/dev/null 2>&1 && [ -f app/main.py ]; then uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload; else python -m http.server 8000; fi"]
+# Production: single worker, no --reload (the reloader doubles memory/CPU, which
+# matters on 512MB free tiers). Honor $PORT injected by the host (e.g. Render).
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 1"]

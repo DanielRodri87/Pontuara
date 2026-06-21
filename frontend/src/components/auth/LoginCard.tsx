@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation'; // Added useRouter import
@@ -21,10 +21,23 @@ export default function LoginCard() {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
+  // Wake up the (free-tier) backend while the user is still typing so the
+  // post-login user lookup doesn't pay the cold-start penalty.
+  useEffect(() => {
+    api.get('/health').catch(() => {});
+  }, []);
+
   const redirectByUserType = async (sessionUser: any) => {
-    const { data: usuarios } = await api.get('/api/v1/usuarios/');
-    const usuario = usuarios.find((item: any) => item.id === sessionUser.id || item.email === sessionUser.email);
-    router.push(usuario?.tipo_usuario === 'empregador' ? '/admin' : '/funcionario');
+    let tipoUsuario: string | undefined;
+    try {
+      // Fetch only the logged-in user instead of the whole users table.
+      const { data: usuario } = await api.get(`/api/v1/usuarios/${sessionUser.id}`);
+      tipoUsuario = usuario?.tipo_usuario;
+    } catch {
+      // If the user has no row yet (e.g. first OAuth login), fall back to default.
+      tipoUsuario = undefined;
+    }
+    router.push(tipoUsuario === 'empregador' ? '/admin' : '/funcionario');
   };
 
   /**

@@ -63,7 +63,7 @@ class TestSupabaseService:
         """list_rows should return a list of rows."""
         mock_response = [{"id": str(uuid4()), "nome": "Test"}]
 
-        with patch("httpx.request") as mock_request:
+        with patch("app.services.supabase._client.request") as mock_request:
             mock_request.return_value.status_code = 200
             mock_request.return_value.json.return_value = mock_response
 
@@ -74,7 +74,7 @@ class TestSupabaseService:
 
     def test_list_rows_error(self, service: SupabaseService, ensure_configured: None) -> None:
         """list_rows should raise HTTPException on error."""
-        with patch("httpx.request") as mock_request:
+        with patch("app.services.supabase._client.request") as mock_request:
             mock_request.return_value.status_code = 500
             mock_request.return_value.json.return_value = {}
 
@@ -88,7 +88,7 @@ class TestSupabaseService:
         item_id = uuid4()
         mock_row = {"id": str(item_id), "nome": "Test"}
 
-        with patch("httpx.request") as mock_request:
+        with patch("app.services.supabase._client.request") as mock_request:
             mock_request.return_value.status_code = 200
             mock_request.return_value.json.return_value = mock_row
 
@@ -98,7 +98,7 @@ class TestSupabaseService:
 
     def test_get_row_not_found(self, service: SupabaseService, ensure_configured: None) -> None:
         """get_row should raise 404 when row is not found."""
-        with patch("httpx.request") as mock_request:
+        with patch("app.services.supabase._client.request") as mock_request:
             mock_request.return_value.status_code = 404
             mock_request.return_value.json.return_value = {}
 
@@ -110,7 +110,7 @@ class TestSupabaseService:
         """get_user_by_email should return user when found."""
         user = {"id": str(uuid4()), "email": "test@email.com"}
 
-        with patch("httpx.request") as mock_request:
+        with patch("app.services.supabase._client.request") as mock_request:
             mock_request.return_value.status_code = 200
             mock_request.return_value.json.return_value = [user]
 
@@ -119,7 +119,7 @@ class TestSupabaseService:
 
     def test_get_user_by_email_not_found(self, service: SupabaseService, ensure_configured: None) -> None:
         """get_user_by_email should return None when not found."""
-        with patch("httpx.request") as mock_request:
+        with patch("app.services.supabase._client.request") as mock_request:
             mock_request.return_value.status_code = 200
             mock_request.return_value.json.return_value = []
 
@@ -130,7 +130,7 @@ class TestSupabaseService:
         """create_row should return the created row."""
         created = {"id": str(uuid4()), "nome": "Novo"}
 
-        with patch("httpx.request") as mock_request:
+        with patch("app.services.supabase._client.request") as mock_request:
             mock_request.return_value.status_code = 201
             mock_request.return_value.json.return_value = [created]
 
@@ -143,7 +143,7 @@ class TestSupabaseService:
         item_id = uuid4()
         updated = {"id": str(item_id), "nome": "Atualizado"}
 
-        with patch("httpx.request") as mock_request:
+        with patch("app.services.supabase._client.request") as mock_request:
             mock_request.return_value.status_code = 200
             mock_request.return_value.json.return_value = [updated]
 
@@ -153,7 +153,7 @@ class TestSupabaseService:
 
     def test_update_row_not_found(self, service: SupabaseService, ensure_configured: None) -> None:
         """update_row should raise 404 when row is not found."""
-        with patch("httpx.request") as mock_request:
+        with patch("app.services.supabase._client.request") as mock_request:
             mock_request.return_value.status_code = 200
             mock_request.return_value.json.return_value = []
 
@@ -163,7 +163,7 @@ class TestSupabaseService:
 
     def test_delete_row_success(self, service: SupabaseService, ensure_configured: None) -> None:
         """delete_row should return None on success."""
-        with patch("httpx.request") as mock_request:
+        with patch("app.services.supabase._client.request") as mock_request:
             mock_request.return_value.status_code = 200
             mock_request.return_value.json.return_value = [{"id": str(uuid4())}]
 
@@ -172,7 +172,7 @@ class TestSupabaseService:
 
     def test_delete_row_not_found(self, service: SupabaseService, ensure_configured: None) -> None:
         """delete_row should raise 404 when row is not found."""
-        with patch("httpx.request") as mock_request:
+        with patch("app.services.supabase._client.request") as mock_request:
             mock_request.return_value.status_code = 200
             mock_request.return_value.json.return_value = []
 
@@ -182,7 +182,7 @@ class TestSupabaseService:
 
     def test_request_error_raises_bad_gateway(self, service: SupabaseService, ensure_configured: None) -> None:
         """Should raise 502 on connection error."""
-        with patch("httpx.request") as mock_request:
+        with patch("app.services.supabase._client.request") as mock_request:
             mock_request.side_effect = httpx.RequestError("Connection failed")
 
             with pytest.raises(HTTPException) as exc:
@@ -202,7 +202,7 @@ class TestSupabaseService:
     def test_signup_user_success(self, service: SupabaseService, ensure_configured: None) -> None:
         """signup_user should return user data on success."""
         mock_response = {"user": {"id": str(uuid4())}}
-        with patch("httpx.post") as mock_post:
+        with patch("app.services.supabase._client.post") as mock_post:
             mock_post.return_value.status_code = 200
             mock_post.return_value.json.return_value = mock_response
 
@@ -211,7 +211,7 @@ class TestSupabaseService:
 
     def test_signup_user_auth_error(self, service: SupabaseService, ensure_configured: None) -> None:
         """signup_user should raise HTTPException on auth error."""
-        with patch("httpx.post") as mock_post:
+        with patch("app.services.supabase._client.post") as mock_post:
             mock_post.return_value.status_code = 400
             mock_post.return_value.json.return_value = {"message": "Email already registered"}
 
@@ -231,7 +231,7 @@ class TestSupabaseService:
 
     def test_signup_user_request_error(self, service: SupabaseService, ensure_configured: None) -> None:
         """signup_user should raise 502 on connection error."""
-        with patch("httpx.post") as mock_post:
+        with patch("app.services.supabase._client.post") as mock_post:
             mock_post.side_effect = httpx.RequestError("Connection error")
 
             with pytest.raises(HTTPException) as exc:
@@ -240,7 +240,7 @@ class TestSupabaseService:
 
     def test_signup_user_unexpected_error(self, service: SupabaseService, ensure_configured: None) -> None:
         """signup_user should raise 500 on unexpected error."""
-        with patch("httpx.post") as mock_post:
+        with patch("app.services.supabase._client.post") as mock_post:
             mock_post.side_effect = RuntimeError("Something unexpected")
 
             with pytest.raises(HTTPException) as exc:
@@ -250,7 +250,7 @@ class TestSupabaseService:
     def test_recover_password_success(self, service: SupabaseService, ensure_configured: None) -> None:
         """recover_password should return response on success."""
         mock_response = {"message": "Recovery email sent"}
-        with patch("httpx.post") as mock_post:
+        with patch("app.services.supabase._client.post") as mock_post:
             mock_post.return_value.status_code = 200
             mock_post.return_value.json.return_value = mock_response
 
@@ -259,7 +259,7 @@ class TestSupabaseService:
 
     def test_recover_password_with_redirect(self, service: SupabaseService, ensure_configured: None) -> None:
         """recover_password should include redirectTo when provided."""
-        with patch("httpx.post") as mock_post:
+        with patch("app.services.supabase._client.post") as mock_post:
             mock_post.return_value.status_code = 200
             mock_post.return_value.json.return_value = {}
 
@@ -270,7 +270,7 @@ class TestSupabaseService:
 
     def test_recover_password_error(self, service: SupabaseService, ensure_configured: None) -> None:
         """recover_password should raise HTTPException on error."""
-        with patch("httpx.post") as mock_post:
+        with patch("app.services.supabase._client.post") as mock_post:
             mock_post.return_value.status_code = 400
             mock_post.return_value.json.return_value = {"message": "User not found"}
 
@@ -281,7 +281,7 @@ class TestSupabaseService:
     def test_verify_otp_success(self, service: SupabaseService, ensure_configured: None) -> None:
         """verify_otp should return session data on success."""
         mock_response = {"access_token": "fake-token"}
-        with patch("httpx.post") as mock_post:
+        with patch("app.services.supabase._client.post") as mock_post:
             mock_post.return_value.status_code = 200
             mock_post.return_value.json.return_value = mock_response
 
@@ -290,7 +290,7 @@ class TestSupabaseService:
 
     def test_verify_otp_without_email(self, service: SupabaseService, ensure_configured: None) -> None:
         """verify_otp should work without email."""
-        with patch("httpx.post") as mock_post:
+        with patch("app.services.supabase._client.post") as mock_post:
             mock_post.return_value.status_code = 200
             mock_post.return_value.json.return_value = {}
 
@@ -301,7 +301,7 @@ class TestSupabaseService:
 
     def test_verify_otp_error(self, service: SupabaseService, ensure_configured: None) -> None:
         """verify_otp should raise HTTPException on error."""
-        with patch("httpx.post") as mock_post:
+        with patch("app.services.supabase._client.post") as mock_post:
             mock_post.return_value.status_code = 401
             mock_post.return_value.json.return_value = {"message": "Invalid token"}
 
@@ -312,7 +312,7 @@ class TestSupabaseService:
     def test_update_user_password_success(self, service: SupabaseService, ensure_configured: None) -> None:
         """update_user_password should return updated user data."""
         mock_response = {"id": str(uuid4()), "email": "user@email.com"}
-        with patch("httpx.put") as mock_put:
+        with patch("app.services.supabase._client.put") as mock_put:
             mock_put.return_value.status_code = 200
             mock_put.return_value.json.return_value = mock_response
 
@@ -321,7 +321,7 @@ class TestSupabaseService:
 
     def test_update_user_password_error(self, service: SupabaseService, ensure_configured: None) -> None:
         """update_user_password should raise HTTPException on error."""
-        with patch("httpx.put") as mock_put:
+        with patch("app.services.supabase._client.put") as mock_put:
             mock_put.return_value.status_code = 400
             mock_put.return_value.json.return_value = {"message": "Weak password"}
 
@@ -333,7 +333,7 @@ class TestSupabaseService:
 
     def test_list_rows_error_non_json(self, service: SupabaseService, ensure_configured: None) -> None:
         """_request should handle non-JSON error response."""
-        with patch("httpx.request") as mock_request:
+        with patch("app.services.supabase._client.request") as mock_request:
             mock_request.return_value.status_code = 500
             mock_request.return_value.json.side_effect = ValueError("Not JSON")
 
@@ -343,7 +343,7 @@ class TestSupabaseService:
 
     def test_get_row_406_not_found(self, service: SupabaseService, ensure_configured: None) -> None:
         """_request with 406 should map to 404."""
-        with patch("httpx.request") as mock_request:
+        with patch("app.services.supabase._client.request") as mock_request:
             mock_request.return_value.status_code = 406
             mock_request.return_value.json.return_value = {}
 
@@ -353,7 +353,7 @@ class TestSupabaseService:
 
     def test_signup_user_auth_error_non_json(self, service: SupabaseService, ensure_configured: None) -> None:
         """signup_user should handle non-JSON error response."""
-        with patch("httpx.post") as mock_post:
+        with patch("app.services.supabase._client.post") as mock_post:
             mock_post.return_value.status_code = 400
             mock_post.return_value.json.side_effect = ValueError("Not JSON")
 
@@ -363,7 +363,7 @@ class TestSupabaseService:
 
     def test_recover_password_error_non_json(self, service: SupabaseService, ensure_configured: None) -> None:
         """recover_password should handle non-JSON error response."""
-        with patch("httpx.post") as mock_post:
+        with patch("app.services.supabase._client.post") as mock_post:
             mock_post.return_value.status_code = 400
             mock_post.return_value.json.side_effect = ValueError("Not JSON")
 
@@ -373,7 +373,7 @@ class TestSupabaseService:
 
     def test_verify_otp_error_non_json(self, service: SupabaseService, ensure_configured: None) -> None:
         """verify_otp should handle non-JSON error response."""
-        with patch("httpx.post") as mock_post:
+        with patch("app.services.supabase._client.post") as mock_post:
             mock_post.return_value.status_code = 401
             mock_post.return_value.json.side_effect = ValueError("Not JSON")
 
@@ -383,7 +383,7 @@ class TestSupabaseService:
 
     def test_update_user_password_error_non_json(self, service: SupabaseService, ensure_configured: None) -> None:
         """update_user_password should handle non-JSON error response."""
-        with patch("httpx.put") as mock_put:
+        with patch("app.services.supabase._client.put") as mock_put:
             mock_put.return_value.status_code = 400
             mock_put.return_value.json.side_effect = ValueError("Not JSON")
 

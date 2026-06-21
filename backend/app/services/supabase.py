@@ -8,6 +8,13 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# Shared HTTP client so TLS connections to Supabase are pooled and reused
+# across requests instead of doing a fresh handshake every call.
+_client = httpx.Client(
+    timeout=settings.supabase_timeout,
+    limits=httpx.Limits(max_keepalive_connections=10, max_connections=20),
+)
+
 
 class SupabaseService:
     """Minimal client to operate via REST with Supabase tables.
@@ -90,7 +97,7 @@ class SupabaseService:
         """
         rest_url, _ = self._ensure_configured()
         try:
-            response = httpx.request(
+            response = _client.request(
                 method=method,
                 url=f"{rest_url}/{table}",
                 headers=self._headers(prefer=prefer, accept_object=accept_object),
@@ -262,7 +269,7 @@ class SupabaseService:
         }
         
         try:
-            response = httpx.post(
+            response = _client.post(
                 auth_url,
                 params={"grant_type": "password"},
                 headers=headers,
@@ -313,7 +320,7 @@ class SupabaseService:
             }
             
             logger.info(f"Enviando requisição POST para signup com email: {email}")
-            response = httpx.post(
+            response = _client.post(
                 auth_url,
                 headers=headers,
                 json={"email": email, "password": password},
@@ -375,7 +382,7 @@ class SupabaseService:
         if redirect_to:
             json_payload["data"] = {"redirectTo": redirect_to}
         
-        response = httpx.post(
+        response = _client.post(
             auth_url,
             headers=headers,
             json=json_payload,
@@ -414,7 +421,7 @@ class SupabaseService:
         if email:
             payload["email"] = email
             
-        response = httpx.post(
+        response = _client.post(
             auth_url,
             headers=headers,
             json=payload,
@@ -449,7 +456,7 @@ class SupabaseService:
             "Content-Type": "application/json",
         }
         
-        response = httpx.put(
+        response = _client.put(
             auth_url,
             headers=headers,
             json={"password": new_password},
