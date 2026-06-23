@@ -59,6 +59,7 @@ class SignupPayload(BaseModel):
     tipo_usuario: str = Field(pattern="^(funcionario|empregador)$")
     idempresa: UUID | None = None
     pendente: bool = False
+    foto_url: str | None = None
 
     @field_validator('password')
     @classmethod
@@ -142,6 +143,7 @@ def signup(payload: SignupPayload) -> UsuarioRead:
             tipo_usuario=payload.tipo_usuario,
             idempresa=payload.idempresa,
             pendente=payload.pendente,
+            foto_url=payload.foto_url,
         )
         
         usuario = supabase_service.create_row(

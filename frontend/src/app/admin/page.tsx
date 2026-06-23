@@ -28,6 +28,7 @@ interface Usuario {
   tipo_usuario: 'funcionario' | 'empregador';
   idempresa?: string | null;
   pendente?: boolean;
+  foto_url?: string | null;
   criado_em: string;
 }
 
@@ -595,7 +596,7 @@ export default function AdminDashboard() {
               <>
                 <div className={local.indivProfile}>
                   <div className={local.indivAvatarWrapper}>
-                    <img src="/images/profile.svg" alt="Avatar" className={local.indivAvatar} />
+                    <img src={currentIndiv.usuario.foto_url || "/images/profile.svg"} alt="Avatar" className={local.indivAvatar} />
                   </div>
                   <div className={local.indivName}>{currentIndiv.usuario.nome} {currentIndiv.usuario.sobrenome}</div>
                   <div className={local.indivRole}>{currentIndiv.usuario.email}</div>
@@ -661,7 +662,7 @@ export default function AdminDashboard() {
                 <tr key={funcionario.id}>
                   <td>
                     <div className={local.colabCell}>
-                      <img src="/images/profile.svg" alt={funcionario.nome} className={local.colabAvatar} />
+                      <img src={funcionario.foto_url || "/images/profile.svg"} alt={funcionario.nome} className={local.colabAvatar} />
                       <div className={local.colabInfo}>
                         <span className={local.name}>{funcionario.nome} {funcionario.sobrenome}</span>
                         <span className={local.email}>{funcionario.email}</span>
@@ -764,7 +765,7 @@ export default function AdminDashboard() {
             </button>
 
             <div className={local.indivAvatarWrapper}>
-              <img src="/images/profile.svg" alt="Avatar" className={local.indivAvatar} />
+              <img src={currentIndiv.usuario.foto_url || "/images/profile.svg"} alt="Avatar" className={local.indivAvatar} />
             </div>
             <div className={local.indivName}>{currentIndiv.usuario.nome} {currentIndiv.usuario.sobrenome}</div>
             <div className={local.indivRole} style={{ marginBottom: 24 }}>{currentIndiv.usuario.email}</div>

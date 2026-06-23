@@ -28,6 +28,7 @@ class UsuarioBase(BaseModel):
     tipo_usuario: TipoUsuario
     idempresa: UUID | None = None
     pendente: bool = False
+    foto_url: str | None = None
 
 
 class UsuarioCreate(UsuarioBase):
@@ -57,6 +58,7 @@ class UsuarioUpdate(BaseModel):
     tipo_usuario: TipoUsuario | None = None
     idempresa: UUID | None = None
     pendente: bool | None = None
+    foto_url: str | None = None
 
 
 class UsuarioRead(UsuarioBase):

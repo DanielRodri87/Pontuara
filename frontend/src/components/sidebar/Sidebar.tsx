@@ -102,7 +102,7 @@ export default function Sidebar({
 
         <div className={local.sidebarBottom}>
           <div className={local.profileCard}>
-            <img src={user?.user_metadata?.avatar_url || "/images/profile.svg"} alt="avatar" className={local.avatar} />
+            <img src={user?.perfil?.foto_url || user?.user_metadata?.avatar_url || "/images/profile.svg"} alt="avatar" className={local.avatar} />
             <div className={local.profileInfo}>
               <span className={local.name}>{user?.user_metadata?.nome || user?.email?.split('@')[0] || 'Usuário'}</span>
               <span className={local.role}>{user?.user_metadata?.tipo_usuario === 'empregador' ? 'Gestor' : 'Funcionário'}</span>

@@ -4,6 +4,7 @@ import React, { useState, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { api } from '@/services/api';
+import { supabase } from '@/services/supabase';
 import styles from './CadastroCard.module.css';
 
 /**
@@ -27,6 +28,7 @@ export default function CadastroCard() {
   const [showPopup, setShowPopup] = useState(false);
   const [generatedCode, setGeneratedCode] = useState('');
   const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [profileFile, setProfileFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -64,6 +66,7 @@ export default function CadastroCard() {
           multiple: false
         });
         const file = await fileHandle.getFile();
+        setProfileFile(file);
         const reader = new FileReader();
         reader.onloadend = () => {
           setProfileImage(reader.result as string);
@@ -88,12 +91,39 @@ export default function CadastroCard() {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setProfileFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
         setProfileImage(reader.result as string);
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  /**
+   * Upload the selected profile image to the Supabase `avatars` bucket.
+   *
+   * @returns {Promise<string | undefined>} Public URL of the uploaded image, or undefined if none.
+   */
+  const uploadProfileImage = async (): Promise<string | undefined> => {
+    if (!profileFile) return undefined;
+    if (!supabase) {
+      throw new Error('Supabase não configurado no frontend (verifique as variáveis NEXT_PUBLIC_SUPABASE_*).');
+    }
+
+    const extension = profileFile.name.split('.').pop()?.toLowerCase() || 'png';
+    const fileName = `${crypto.randomUUID()}.${extension}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('avatars')
+      .upload(fileName, profileFile, { contentType: profileFile.type });
+
+    if (uploadError) {
+      throw new Error(`Falha ao enviar a foto: ${uploadError.message}`);
+    }
+
+    const { data } = supabase.storage.from('avatars').getPublicUrl(fileName);
+    return data.publicUrl;
   };
 
   /**
@@ -241,6 +271,9 @@ export default function CadastroCard() {
         empresaId = empresa.id;
       }
 
+      // Upload the profile image (if any) to Supabase Storage before signup
+      const fotoUrl = await uploadProfileImage();
+
       // Call the backend signup endpoint
       const response = await api.post('/api/v1/auth/signup', {
         nome: formData.firstName,
@@ -251,6 +284,7 @@ export default function CadastroCard() {
         tipo_usuario: formData.userType,
         idempresa: empresaId,
         pendente: formData.userType === 'funcionario',
+        foto_url: fotoUrl,
       });
 
       console.log('Usuário cadastrado com sucesso:', response.data);
@@ -279,6 +313,9 @@ export default function CadastroCard() {
         setErrorMsg('Dados inválidos. Verifique os campos preenchidos.');
       } else if (error.response && error.response.status === 409) {
         setErrorMsg('Este email já está cadastrado. Use outro email ou faça login.');
+      } else if (!error.response && error.message) {
+        // Non-HTTP errors (e.g. image upload to Supabase Storage failed)
+        setErrorMsg(error.message);
       } else {
         setErrorMsg('Erro ao criar conta. Tente novamente mais tarde.');
       }
